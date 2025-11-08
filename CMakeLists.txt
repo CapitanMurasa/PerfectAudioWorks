@@ -21,29 +21,57 @@ set(SOURCES
     src/AudioPharser/PortAudioHandler.cpp
     src/AudioPharser/CodecHandler.c
     src/AudioPharser/portaudio_backend.c
-    src/miscellaneous/file.c
+    src/miscellaneous/file.cpp
 )
+
+# --- Define empty targets (will be set in if/else) ---
+set(PORTAUDIO_TARGET "")
+set(SNDFILE_TARGET "")
+set(MPG123_TARGET "")
+set(TAGLIB_TARGET "")
+
 
 # --- PortAudio and Dependency Logic ---
 
 if(MSVC)
-    # --- Windows/MSVC Configuration ---
-    message(STATUS "Using Windows/MSVC configuration.")
+    message(STATUS "Using Windows/MSVC (find_path/find_library) configuration.")
     add_definitions(-D_WIN32) 
 
-    find_package(portaudio CONFIG REQUIRED)
-    if(TARGET portaudio::portaudio)
-        set(PORTAUDIO_TARGET portaudio::portaudio)
-    elseif(TARGET portaudio)
-        set(PORTAUDIO_TARGET portaudio)
+
+    set(VCPKG_ROOT "C:/Users/MOKOU/Documents/dev/vcpkg/scripts/buildsystems/vcpkg.cmake")
+    set(VCPKG_WIN_TRIPLET "x64-windows")
+    set(VCPKG_SEARCH_PATH "${VCPKG_ROOT}/packages/portaudio_${VCPKG_WIN_TRIPLET}")
+    set(TAGLIB_SEARCH_PATH "${VCPKG_ROOT}/packages/taglib_${VCPKG_WIN_TRIPLET}")
+
+    # PortAudio (Manual)
+    find_path(PORTAUDIO_INCLUDE_DIR portaudio.h
+        PATHS "${VCPKG_SEARCH_PATH}/include"
+    )
+    find_library(PORTAUDIO_LIB NAMES portaudio
+        PATHS "${VCPKG_SEARCH_PATH}/lib"
+    )
+    if(PORTAUDIO_INCLUDE_DIR AND PORTAUDIO_LIB)
+        include_directories(${PORTAUDIO_INCLUDE_DIR})
+        set(PORTAUDIO_TARGET ${PORTAUDIO_LIB})
     else()
-        message(FATAL_ERROR "PortAudio config found, but neither 'portaudio::portaudio' nor 'portaudio' exists.")
+        message(FATAL_ERROR "PortAudio (vcpkg) not found. Check VCPKG_ROOT path in CMakeLists.txt.")
     endif()
-    
-    if(PORTAUDIO_INCLUDE_DIRS)
-        include_directories(${PORTAUDIO_INCLUDE_DIRS})
+
+    # TagLib (Manual)
+    find_path(TAGLIB_INCLUDE_DIR taglib/tag.h
+        PATHS "${TAGLIB_SEARCH_PATH}/include"
+    )
+    find_library(TAGLIB_LIB NAMES tag
+        PATHS "${TAGLIB_SEARCH_PATH}/lib"
+    )
+    if(TAGLIB_INCLUDE_DIR AND TAGLIB_LIB)
+        include_directories(${TAGLIB_INCLUDE_DIR})
+        set(TAGLIB_TARGET ${TAGLIB_LIB})
+    else()
+        message(FATAL_ERROR "TagLib (vcpkg) not found. Check VCPKG_ROOT path in CMakeLists.txt.")
     endif()
-    
+
+    # SndFile & MPG123 (vcpkg still handles these well)
     if(ENABLE_SNDFILE)
         find_package(SndFile CONFIG)
         if(SndFile_FOUND)
@@ -65,7 +93,7 @@ else()
     # --- Unix/Linux (WSL) Configuration ---
     message(STATUS "Using Unix/Linux (find_path/find_library) configuration.")
 
-    # PortAudio
+    # PortAudio (Manual)
     find_path(PORTAUDIO_INCLUDE_DIR portaudio.h)
     find_library(PORTAUDIO_LIB NAMES portaudio)
     if(PORTAUDIO_INCLUDE_DIR AND PORTAUDIO_LIB)
@@ -75,7 +103,17 @@ else()
         message(FATAL_ERROR "PortAudio not found. Have you installed 'portaudio19-dev'?")
     endif()
 
-    # SndFile
+    # TagLib (Manual)
+    find_path(TAGLIB_INCLUDE_DIR taglib/tag.h)
+    find_library(TAGLIB_LIB NAMES tag)
+    if(TAGLIB_INCLUDE_DIR AND TAGLIB_LIB)
+        include_directories(${TAGLIB_INCLUDE_DIR})
+        set(TAGLIB_TARGET ${TAGLIB_LIB})
+    else()
+        message(FATAL_ERROR "TagLib not found. Have you installed 'libtag1-dev'?")
+    endif()
+
+    # SndFile & MPG123 (Manual)
     if(ENABLE_SNDFILE)
         find_path(SNDFILE_INCLUDE_DIR sndfile.h)
         find_library(SNDFILE_LIB NAMES sndfile)
@@ -85,13 +123,8 @@ else()
             include_directories(${SNDFILE_INCLUDE_DIR})
             set(SNDFILE_TARGET ${SNDFILE_LIB})
             list(APPEND SOURCES src/AudioPharser/libsndfiledecoder.c)
-        else()
-            message(WARNING "libsndfile requested but not found, disabling")
-            set(ENABLE_SNDFILE OFF)
         endif()
     endif()
-
-    # MPG123
     if(ENABLE_MPG123)
         find_path(MPG123_INCLUDE_DIR mpg123.h)
         find_library(MPG123_LIB NAMES mpg123)
@@ -101,9 +134,6 @@ else()
             include_directories(${MPG123_INCLUDE_DIR})
             set(MPG123_TARGET ${MPG123_LIB})
             list(APPEND SOURCES src/AudioPharser/mpg123decoder.c)
-        else()
-            message(WARNING "mpg123 requested but not found, disabling")
-            set(ENABLE_MPG123 OFF)
         endif()
     endif()
 endif()
@@ -118,21 +148,21 @@ list(APPEND SOURCES
     src/PAW_GUI/main_paw_widget.cpp
 )
 
-# --- Executable Definition and Linking ---
+# --- Executable Definition ---
 add_executable(PAW ${SOURCES})
 
-# --- Base Linking ---
+# --- Universal Linking ---
 target_link_libraries(PAW PRIVATE
     Qt6::Core
     Qt6::Widgets
     ${PORTAUDIO_TARGET}
+    ${TAGLIB_TARGET}
 )
 
-# --- Conditional Linking (FIXES THE ERROR) ---
+# --- Conditional Linking ---
 if(SNDFILE_TARGET)
     target_link_libraries(PAW PRIVATE ${SNDFILE_TARGET})
 endif()
-
 if(MPG123_TARGET)
     target_link_libraries(PAW PRIVATE ${MPG123_TARGET})
 endif()

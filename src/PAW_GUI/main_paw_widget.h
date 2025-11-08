@@ -35,6 +35,8 @@ public:
     
     PortaudioThread& getAudioThread() { return *m_audiothread; }
 
+protected:
+    void resizeEvent(QResizeEvent* event) override;
 
 private slots:
    
@@ -59,10 +61,12 @@ private:
     PortaudioThread* m_audiothread; 
     QString m_currentFile; 
     FileInfo filemetadata;
-
+    QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
     About_PAW_gui about;
+
     QString floatToMMSS(float totalSeconds);
+    void updateAlbumArt();
 
     bool finished_playing;
 

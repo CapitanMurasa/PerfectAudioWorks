@@ -67,11 +67,13 @@ void Main_PAW_widget::start_playback(const QString &filename) {
     m_currentFile = filename;
     m_audiothread->setFile(m_currentFile);
 
-    QByteArray filenameBytes = filename.toLocal8Bit();
-    const char* filenamechar = filenameBytes.constData();
+    QByteArray c_filePath = filename.toUtf8();
+    const char* filenamechar = c_filePath.constData();
 
 
     if (get_metadata(filenamechar, &filemetadata) == 0) {
+        QPixmap coverArt;
+        bool artFound = false;
 
         QString title = filemetadata.title && strlen(filemetadata.title) > 0
                         ? QString::fromUtf8(filemetadata.title)
@@ -79,6 +81,25 @@ void Main_PAW_widget::start_playback(const QString &filename) {
         QString artist = filemetadata.artist && strlen(filemetadata.artist) > 0
                          ? QString::fromUtf8(filemetadata.artist)
                          : "";
+
+        if (filemetadata.cover_image && filemetadata.cover_size > 0) {
+            if (coverArt.loadFromData(filemetadata.cover_image, filemetadata.cover_size)) {
+                artFound = true;
+            }
+        }
+
+
+        FileInfo_cleanup(&filemetadata);
+
+        if (artFound) {
+            m_originalAlbumArt = coverArt;
+        }
+        else {
+            
+            m_originalAlbumArt = QPixmap();
+        }
+
+        updateAlbumArt();
 
         ui->Filename->setText(title);
         ui->Artist->setText(artist);
@@ -93,7 +114,32 @@ void Main_PAW_widget::start_playback(const QString &filename) {
 }
 
 
+void Main_PAW_widget::updateAlbumArt()
+{
+    if (m_originalAlbumArt.isNull()) {
 
+        ui->AlbumArt->setPixmap(QPixmap());
+        ui->AlbumArt->setText("No Art");
+        return;
+    }
+
+
+    QPixmap scaledArt = m_originalAlbumArt.scaled(ui->AlbumArt->size(),
+        Qt::KeepAspectRatio,
+        Qt::SmoothTransformation);
+
+
+    ui->AlbumArt->setPixmap(scaledArt);
+}
+
+void Main_PAW_widget::resizeEvent(QResizeEvent* event)
+{
+    
+    QWidget::resizeEvent(event);
+
+    
+    updateAlbumArt();
+}
 
 void Main_PAW_widget::handlePlaybackProgress(int currentFrame, int totalFrames, int sampleRate) {
     if (totalFrames > 0 && sampleRate > 0) {
