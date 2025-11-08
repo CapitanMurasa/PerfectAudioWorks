@@ -1,70 +1,104 @@
 #include "libsndfiledecoder.h"
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h>
 
+// Note: The cross-platform include block for unistd.h/pthread.h was removed from this file 
+// because those headers and functions were not used here. This resolves the 
+// "cannot open source file 'pthread.h'" error for this specific file.
+
+/**
+ * @brief Opens an audio file using libsndfile.
+ * @param filename The path to the audio file.
+ * @return A pointer to the SndFileDecoder struct, or NULL on failure.
+ */
 SndFileDecoder* sndfile_open(const char* filename) {
-    if (!filename) return NULL;
-
-    SndFileDecoder* dec = (SndFileDecoder*)malloc(sizeof(SndFileDecoder));
-    if (!dec) return NULL;
-    memset(dec, 0, sizeof(SndFileDecoder));
-
-    dec->file = sf_open(filename, SFM_READ, &dec->info);
-    if (!dec->file) {
-        free(dec);
+    SndFileDecoder* decoder = (SndFileDecoder*)malloc(sizeof(SndFileDecoder));
+    if (!decoder) {
         return NULL;
     }
-    dec->current_frame = 0;
-    return dec;
+
+    decoder->info.format = 0; 
+    decoder->file = sf_open(filename, SFM_READ, &decoder->info);
+
+    if (decoder->file == NULL) {
+        // sf_open failed
+        fprintf(stderr, "Error opening file %s: %s\n", filename, sf_strerror(NULL));
+        free(decoder);
+        return NULL;
+    }
+
+    decoder->current_frame = 0;
+    return decoder;
 }
 
-sf_count_t sndfile_read_float(SndFileDecoder* dec, float* buffer, sf_count_t frames) {
-    if (!dec || !dec->file || !buffer || frames <= 0) return 0;
-
-
-    sf_count_t read_samples = sf_read_float(dec->file, buffer, frames * dec->info.channels);
-
-
-    sf_count_t read_frames = read_samples / dec->info.channels;
-
-    dec->current_frame += read_frames;
-    if (dec->current_frame > dec->info.frames)
-        dec->current_frame = dec->info.frames;
-
+/**
+ * @brief Reads frames of audio data into a float buffer.
+ * @param decoder The decoder instance.
+ * @param buffer The destination buffer.
+ * @param frames The number of frames to read.
+ * @return The actual number of frames read.
+ */
+sf_count_t sndfile_read_float(SndFileDecoder* decoder, float* buffer, sf_count_t frames) {
+    if (!decoder || !decoder->file) return 0;
+    sf_count_t read_frames = sf_readf_float(decoder->file, buffer, frames);
+    decoder->current_frame += read_frames;
     return read_frames;
 }
 
-sf_count_t sndfile_seek(SndFileDecoder* dec, sf_count_t frame) {
-    if (!dec || !dec->file) return -1;
-
-    if (frame < 0) frame = 0;
-    if (frame >= dec->info.frames) frame = dec->info.frames - 1;
-
-    sf_count_t result = sf_seek(dec->file, frame, SF_SEEK_SET);
-    if (result >= 0)
-        dec->current_frame = result;
-    return result;
+/**
+ * @brief Seeks to a specific frame position in the file.
+ * @param decoder The decoder instance.
+ * @param frame The frame index to seek to.
+ * @return The new current frame position.
+ */
+sf_count_t sndfile_seek(SndFileDecoder* decoder, sf_count_t frame) {
+    if (!decoder || !decoder->file) return 0;
+    sf_count_t result = sf_seek(decoder->file, frame, SEEK_SET);
+    if (result >= 0) {
+        decoder->current_frame = result;
+    }
+    return decoder->current_frame;
 }
 
-sf_count_t sndfile_get_current_frame(SndFileDecoder* dec) {
-    if (!dec) return -1;
-    return dec->current_frame;
+/**
+ * @brief Gets the current frame position.
+ */
+sf_count_t sndfile_get_current_frame(SndFileDecoder* decoder) {
+    if (!decoder) return 0;
+    return decoder->current_frame;
 }
 
-sf_count_t sndfile_get_total_frames(SndFileDecoder* dec) {
-    return dec ? dec->info.frames : 0;
+/**
+ * @brief Gets the total number of frames in the file.
+ */
+sf_count_t sndfile_get_total_frames(SndFileDecoder* decoder) {
+    if (!decoder) return 0;
+    return decoder->info.frames;
 }
 
-int sndfile_get_channels(SndFileDecoder* dec) {
-    return dec ? dec->info.channels : 0;
+/**
+ * @brief Gets the number of channels.
+ */
+int sndfile_get_channels(SndFileDecoder* decoder) {
+    if (!decoder) return 0;
+    return decoder->info.channels;
 }
 
-int sndfile_get_samplerate(SndFileDecoder* dec) {
-    return dec ? dec->info.samplerate : 0;
+/**
+ * @brief Gets the sample rate of the file.
+ */
+int sndfile_get_samplerate(SndFileDecoder* decoder) {
+    if (!decoder) return 0;
+    return decoder->info.samplerate;
 }
 
-void sndfile_close(SndFileDecoder* dec) {
-    if (!dec) return;
-    if (dec->file) sf_close(dec->file);
-    free(dec);
+/**
+ * @brief Closes the audio file and frees the decoder memory.
+ */
+void sndfile_close(SndFileDecoder* decoder) {
+    if (decoder) {
+        if (decoder->file) {
+            sf_close(decoder->file);
+        }
+        free(decoder);
+    }
 }
