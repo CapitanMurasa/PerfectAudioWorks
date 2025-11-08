@@ -1,17 +1,21 @@
 cmake_minimum_required(VERSION 3.10)
 project(PerfectAudioWorks LANGUAGES CXX C)
 
+# --- Compiler Settings ---
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# --- Qt Setup ---
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
+# --- CMake Options for Decoders ---
 option(ENABLE_SNDFILE "Enable libsndfile support" ON)
 option(ENABLE_MPG123 "Enable mpg123 support" ON)
 
+# --- Source Files ---
 set(SOURCES
     src/main.cpp
     src/AudioPharser/PortAudioHandler.cpp
@@ -20,36 +24,20 @@ set(SOURCES
     src/miscellaneous/file.c
 )
 
-if(ENABLE_SNDFILE)
-    list(APPEND SOURCES src/AudioPharser/libsndfiledecoder.c)
-endif()
-
-if(ENABLE_MPG123)
-    list(APPEND SOURCES src/AudioPharser/mpg123decoder.c)
-endif()
-
-list(APPEND SOURCES
-    src/PAW_GUI/about_paw_gui.ui
-    src/PAW_GUI/about_paw_gui.cpp
-    src/PAW_GUI/settings_paw_gui.ui
-    src/PAW_GUI/settings_paw_gui.cpp
-    src/PAW_GUI/main_paw_widget.ui
-    src/PAW_GUI/main_paw_widget.cpp
-)
-
+# --- PortAudio and Dependency Logic ---
 
 if(MSVC)
+    # --- Windows/MSVC Configuration ---
     message(STATUS "Using Windows/MSVC configuration.")
     add_definitions(-D_WIN32) 
 
     find_package(portaudio CONFIG REQUIRED)
-    
     if(TARGET portaudio::portaudio)
         set(PORTAUDIO_TARGET portaudio::portaudio)
     elseif(TARGET portaudio)
         set(PORTAUDIO_TARGET portaudio)
     else()
-        message(FATAL_ERROR "PortAudio config found, but neither target 'portaudio::portaudio' nor 'portaudio' exists.")
+        message(FATAL_ERROR "PortAudio config found, but neither 'portaudio::portaudio' nor 'portaudio' exists.")
     endif()
     
     if(PORTAUDIO_INCLUDE_DIRS)
@@ -61,6 +49,7 @@ if(MSVC)
         if(SndFile_FOUND)
             add_definitions(-DENABLE_SNDFILE)
             set(SNDFILE_TARGET SndFile::sndfile)
+            list(APPEND SOURCES src/AudioPharser/libsndfiledecoder.c)
         endif()
     endif()
     if(ENABLE_MPG123)
@@ -68,22 +57,25 @@ if(MSVC)
         if(MPG123_FOUND)
             add_definitions(-DENABLE_MPG123)
             set(MPG123_TARGET MPG123::libmpg123)
+            list(APPEND SOURCES src/AudioPharser/mpg123decoder.c)
         endif()
     endif()
 
 else()
+    # --- Unix/Linux (WSL) Configuration ---
     message(STATUS "Using Unix/Linux (find_path/find_library) configuration.")
 
+    # PortAudio
     find_path(PORTAUDIO_INCLUDE_DIR portaudio.h)
     find_library(PORTAUDIO_LIB NAMES portaudio)
     if(PORTAUDIO_INCLUDE_DIR AND PORTAUDIO_LIB)
         include_directories(${PORTAUDIO_INCLUDE_DIR})
-        set(PORTAUDIO_TARGET ${PORTAUDIO_LIB}) 
+        set(PORTAUDIO_TARGET ${PORTAUDIO_LIB})
     else()
         message(FATAL_ERROR "PortAudio not found. Have you installed 'portaudio19-dev'?")
     endif()
 
-
+    # SndFile
     if(ENABLE_SNDFILE)
         find_path(SNDFILE_INCLUDE_DIR sndfile.h)
         find_library(SNDFILE_LIB NAMES sndfile)
@@ -92,6 +84,7 @@ else()
             add_definitions(-DENABLE_SNDFILE)
             include_directories(${SNDFILE_INCLUDE_DIR})
             set(SNDFILE_TARGET ${SNDFILE_LIB})
+            list(APPEND SOURCES src/AudioPharser/libsndfiledecoder.c)
         else()
             message(WARNING "libsndfile requested but not found, disabling")
             set(ENABLE_SNDFILE OFF)
@@ -106,7 +99,8 @@ else()
             message(STATUS "mpg123 enabled")
             add_definitions(-DENABLE_MPG123)
             include_directories(${MPG123_INCLUDE_DIR})
-            set(MPG123_TARGET ${MPG123_LIB}) 
+            set(MPG123_TARGET ${MPG123_LIB})
+            list(APPEND SOURCES src/AudioPharser/mpg123decoder.c)
         else()
             message(WARNING "mpg123 requested but not found, disabling")
             set(ENABLE_MPG123 OFF)
@@ -114,20 +108,36 @@ else()
     endif()
 endif()
 
+# --- GUI Sources (Always Added) ---
+list(APPEND SOURCES
+    src/PAW_GUI/about_paw_gui.ui
+    src/PAW_GUI/about_paw_gui.cpp
+    src/PAW_GUI/settings_paw_gui.ui
+    src/PAW_GUI/settings_paw_gui.cpp
+    src/PAW_GUI/main_paw_widget.ui
+    src/PAW_GUI/main_paw_widget.cpp
+)
 
-
+# --- Executable Definition and Linking ---
 add_executable(PAW ${SOURCES})
 
-
+# --- Base Linking ---
 target_link_libraries(PAW PRIVATE
     Qt6::Core
     Qt6::Widgets
     ${PORTAUDIO_TARGET}
-    ${SNDFILE_TARGET}
-    ${MPG123_TARGET}
 )
 
+# --- Conditional Linking (FIXES THE ERROR) ---
+if(SNDFILE_TARGET)
+    target_link_libraries(PAW PRIVATE ${SNDFILE_TARGET})
+endif()
 
+if(MPG123_TARGET)
+    target_link_libraries(PAW PRIVATE ${MPG123_TARGET})
+endif()
+
+# --- Windows-Specific Linking ---
 if (WIN32)
     target_link_libraries(PAW PRIVATE Ws2_32)
 endif()
