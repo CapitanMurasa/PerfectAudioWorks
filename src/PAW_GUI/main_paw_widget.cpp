@@ -2,6 +2,34 @@
 #include "ui_main_paw_widget.h"
 #include <cmath> 
 
+void Main_PAW_widget::SetupUIElements(){
+    ui->Playlist->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    // ui elements setup
+    connect(ui->TimelineSlider, &QSlider::valueChanged, this, &Main_PAW_widget::onSliderValueChanged);
+    connect(ui->PlayPause, &QPushButton::clicked, this, &Main_PAW_widget::PlayPauseButton);
+    connect(ui->actionSettings, &QAction::triggered, this, &Main_PAW_widget::openSettings);
+    connect(ui->actionAbout, &QAction::triggered, this, &Main_PAW_widget::openAbout);
+    connect(ui->actionadd_files_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addFilesToPlaylist);
+    connect(ui->Stop, &QPushButton::clicked, this, &Main_PAW_widget::StopPlayback);
+    connect(ui->PreviousTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayPreviousItem);
+    connect(ui->NextTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayNextItem);
+    connect(ui->Playlist, &QListWidget::customContextMenuRequested, this, &Main_PAW_widget::showPlaylistContextMenu);
+    connect(ui->Playlist, &QListWidget::itemDoubleClicked, this, &Main_PAW_widget::playSelectedItem);
+    // portaudio thread setup
+    connect(m_audiothread, &PortaudioThread::playbackProgress, this, &Main_PAW_widget::handlePlaybackProgress);
+    connect(m_audiothread, &PortaudioThread::totalFileInfo, this, &Main_PAW_widget::handleTotalFileInfo);
+    connect(m_audiothread, &PortaudioThread::playbackFinished, this, &Main_PAW_widget::handlePlaybackFinished);
+    connect(m_audiothread, &PortaudioThread::errorOccurred, this, &Main_PAW_widget::handleError);
+}
+
+void Main_PAW_widget::SetupQtActions(){
+    m_deleteAction = new QAction("Delete Item", this);
+    m_deleteAction->setShortcut(QKeySequence::Delete);
+    m_deleteAction->setShortcutContext(Qt::WidgetShortcut);
+    connect(m_deleteAction, &QAction::triggered, this, &Main_PAW_widget::deleteSelectedItem);
+    ui->Playlist->addAction(m_deleteAction);
+}
 Main_PAW_widget::Main_PAW_widget(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::Main_PAW_widget)
@@ -11,39 +39,10 @@ Main_PAW_widget::Main_PAW_widget(QWidget *parent)
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
     
-    connect(ui->TimelineSlider, &QSlider::valueChanged, this, &Main_PAW_widget::onSliderValueChanged);
-    connect(ui->PlayPause, &QPushButton::clicked, this, &Main_PAW_widget::PlayPauseButton);
-    connect(ui->actionSettings, &QAction::triggered, this, &Main_PAW_widget::openSettings);
-    connect(ui->actionAbout, &QAction::triggered, this, &Main_PAW_widget::openAbout);
-    connect(ui->actionadd_files_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addFilesToPlaylist);
-    connect(ui->Stop, &QPushButton::clicked, this, &Main_PAW_widget::StopPlayback);
-    connect(ui->PreviousTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayPreviousItem);
-    connect(ui->NextTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayNextItem);
+    SetupUIElements();
+    SetupQtActions();
 
-    connect(m_audiothread, &PortaudioThread::playbackProgress, this, &Main_PAW_widget::handlePlaybackProgress);
-    connect(m_audiothread, &PortaudioThread::totalFileInfo, this, &Main_PAW_widget::handleTotalFileInfo);
-    connect(m_audiothread, &PortaudioThread::playbackFinished, this, &Main_PAW_widget::handlePlaybackFinished);
-    connect(m_audiothread, &PortaudioThread::errorOccurred, this, &Main_PAW_widget::handleError);
-    QObject::connect(ui->Playlist, &QListWidget::itemDoubleClicked, [&](QListWidgetItem *item){
-        QString filename = item->data(Qt::UserRole).toString();
-        qDebug() << "Selected file:" << filename;
-        if (m_audiothread->isRunning()) {
-            m_audiothread->stopPlayback();
-            m_audiothread->wait();
-        }
-        start_playback(filename);
-    });
-
-
-
-   
     m_updateTimer = new QTimer(this);
-
-
-    ui->TimelineSlider->setRange(0, 100); 
-    ui->TimelineSlider->setValue(0);
-    ui->CurrentFileDuration->setText("00:00");
-
 }
 
 Main_PAW_widget::~Main_PAW_widget()
@@ -60,9 +59,7 @@ Main_PAW_widget::~Main_PAW_widget()
 
 void Main_PAW_widget::start_playback(const QString &filename) {
 
-    if (m_audiothread->isRunning()) {
-        m_audiothread->stopPlayback();
-    }
+    StopPlayback();
 
     m_currentFile = filename;
     m_audiothread->setFile(m_currentFile);
@@ -172,12 +169,11 @@ void Main_PAW_widget::handleTotalFileInfo(int totalFrames,int channels, int samp
 
 
 void Main_PAW_widget::handlePlaybackFinished() {
-    m_updateTimer->stop(); 
-    ui->TimelineSlider->setValue(100); 
+    m_updateTimer->stop();
+    ui->TimelineSlider->setValue(0);
+    ui->CurrentFileDuration->setText("00:00");
+    
 }
-
-
-
 
 void Main_PAW_widget::on_actionopen_file_triggered() {
     QString filename = QFileDialog::getOpenFileName(this, "Open Audio File", "", "Audio Files (*.wav *.flac *.ogg *.opus *.mp3);;All Files (*)");
@@ -209,37 +205,6 @@ void Main_PAW_widget::StopPlayback(){
         m_audiothread->stopPlayback();
     }
 }
-
-void Main_PAW_widget::PlayNextItem() {
-    QListWidgetItem* currentItem = ui->Playlist->currentItem();
-    if (!currentItem) return;
-
-    int currentRow = ui->Playlist->row(currentItem);
-    int nextRow = currentRow + 1;
-    if (nextRow >= ui->Playlist->count()) return;
-
-    QListWidgetItem* nextItem = ui->Playlist->item(nextRow);
-    QString filename = nextItem->data(Qt::UserRole).toString();  // get full path
-
-    ui->Playlist->setCurrentItem(nextItem);
-    start_playback(filename);
-}
-
-void Main_PAW_widget::PlayPreviousItem() {
-    QListWidgetItem* currentItem = ui->Playlist->currentItem();
-    if (!currentItem) return;
-
-    int currentRow = ui->Playlist->row(currentItem);
-    int previousRow = currentRow - 1;
-    if (previousRow < 0) return;
-
-    QListWidgetItem* previousItem = ui->Playlist->item(previousRow);
-    QString filename = previousItem->data(Qt::UserRole).toString();  // get full path
-
-    ui->Playlist->setCurrentItem(previousItem);
-    start_playback(filename);
-}
-
 
 void Main_PAW_widget::addFilesToPlaylist() {
     QStringList files = QFileDialog::getOpenFileNames(
@@ -277,6 +242,86 @@ void Main_PAW_widget::addFilesToPlaylist() {
     }
 }
 
+void Main_PAW_widget::playSelectedItem(){
+    QString filename = returnItemPath();
+    qDebug() << "Selected file:" << filename;
+    if (m_audiothread->isRunning()) {
+        m_audiothread->stopPlayback();
+        m_audiothread->wait();
+    }
+    start_playback(filename);
+}
+
+void Main_PAW_widget::PlayNextItem() {
+    QListWidgetItem* currentItem = ui->Playlist->currentItem();
+    if (!currentItem) return;
+
+    int currentRow = ui->Playlist->row(currentItem);
+    int nextRow = currentRow + 1;
+    if (nextRow >= ui->Playlist->count()) return;
+
+    QListWidgetItem* nextItem = ui->Playlist->item(nextRow);
+    QString filename = nextItem->data(Qt::UserRole).toString();  // get full path
+
+    ui->Playlist->setCurrentItem(nextItem);
+    start_playback(filename);
+}
+
+void Main_PAW_widget::PlayPreviousItem() {
+    QListWidgetItem* currentItem = ui->Playlist->currentItem();
+    if (!currentItem) return;
+
+    int currentRow = ui->Playlist->row(currentItem);
+    int previousRow = currentRow - 1;
+    if (previousRow < 0) return;
+
+    QListWidgetItem* previousItem = ui->Playlist->item(previousRow);
+    QString filename = previousItem->data(Qt::UserRole).toString();  // get full path
+
+    ui->Playlist->setCurrentItem(previousItem);
+    start_playback(filename);
+}
+
+void Main_PAW_widget::deleteSelectedItem()
+{
+    QListWidgetItem *selectedItem = ui->Playlist->currentItem();
+
+    if(selectedItem)
+    {
+        qDebug() << "Deleting:" << selectedItem->text();
+
+        delete ui->Playlist->takeItem(ui->Playlist->row(selectedItem));
+    }
+}
+
+void Main_PAW_widget::showPlaylistContextMenu(const QPoint &pos) {
+    QListWidgetItem *clickedItem = ui->Playlist->itemAt(pos);
+    QMenu contextMenu(this);
+
+
+    QAction *ShowDetails = new QAction("ShowDetails", this);
+    
+
+    connect(ShowDetails, &QAction::triggered, this, [=](){
+        if(clickedItem) { 
+            qDebug() << "File:" << clickedItem->text();
+
+        }
+    });
+
+
+    contextMenu.addAction(ShowDetails);
+    contextMenu.addAction(m_deleteAction);
+    
+
+    bool itemClicked = (clickedItem != nullptr);
+    ShowDetails->setEnabled(itemClicked);
+    m_deleteAction->setEnabled(itemClicked);
+
+
+    contextMenu.exec(ui->Playlist->mapToGlobal(pos));
+}
+
 void Main_PAW_widget::handleError(const QString &errorMessage) {
     QMessageBox::critical(this, "Audio Playback Error", errorMessage);
     m_audiothread->stopPlayback(); 
@@ -291,6 +336,12 @@ void Main_PAW_widget::openSettings(){
 
 void Main_PAW_widget::openAbout(){
     about.show();
+}
+
+QString Main_PAW_widget::returnItemPath(){
+    QListWidgetItem* item = ui->Playlist->currentItem();
+    QString filepath = item->data(Qt::UserRole).toString();
+    return filepath;
 }
 
 
