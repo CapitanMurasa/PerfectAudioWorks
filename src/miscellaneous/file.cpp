@@ -11,22 +11,6 @@
 #include <taglib/attachedpictureframe.h>
 #include <taglib/flacfile.h>
 
-#ifdef _WIN32
-#include <string>
-#include <locale>
-#include <codecvt> 
-
-static std::wstring utf8_to_wstring(const char* utf8_str) {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    try {
-        return converter.from_bytes(utf8_str);
-    }
-    catch (const std::exception&) {
-        return std::wstring();
-    }
-}
-#endif
-
 static void copy_tstring_to_char(const TagLib::String& tstr, char* dest, size_t dest_size) {
     if (tstr.isEmpty() || dest_size == 0) {
         if (dest_size > 0) dest[0] = '\0';
@@ -69,13 +53,7 @@ extern "C" {
         strncpy(info->format, type, sizeof(info->format) - 1);
         info->format[sizeof(info->format) - 1] = '\0';
 
-#ifdef _WIN32
-        std::wstring w_filename = utf8_to_wstring(filename);
-        if (w_filename.empty()) { return -1; }
-        TagLib::FileRef fileRef(w_filename.c_str());
-#else
         TagLib::FileRef fileRef(filename);
-#endif
 
         if (fileRef.isNull() || !fileRef.tag()) {
             return 0;
@@ -91,11 +69,8 @@ extern "C" {
         TagLib::ByteVector imgData;
 
         if (strcmp(type, "MP3") == 0) {
-#ifdef _WIN32
-            TagLib::MPEG::File mpegFile(w_filename.c_str());
-#else
+
             TagLib::MPEG::File mpegFile(filename);
-#endif
             if (mpegFile.ID3v2Tag()) {
                 TagLib::ID3v2::FrameList apicFrames = mpegFile.ID3v2Tag()->frameList("APIC");
                 if (!apicFrames.isEmpty()) {
@@ -115,11 +90,8 @@ extern "C" {
             }
         }
         else if (strcmp(type, "FLAC") == 0) {
-#ifdef _WIN32
-            TagLib::FLAC::File flacFile(w_filename.c_str());
-#else
+
             TagLib::FLAC::File flacFile(filename);
-#endif
             auto picList = flacFile.pictureList();
             if (!picList.isEmpty()) {
                 TagLib::FLAC::Picture* bestPic = nullptr;
@@ -158,4 +130,4 @@ extern "C" {
         }
     }
 
-} // extern "C"
+}
