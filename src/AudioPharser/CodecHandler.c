@@ -8,6 +8,49 @@ struct CodecHandler {
     void* decoder;
 };
 
+#ifdef _WIN32
+#include <wchar.h>
+
+CodecHandler* codec_open_w(const wchar_t* filename_w) {
+    if (!filename_w) return NULL;
+
+    const wchar_t* ext_dot = wcsrchr(filename_w, L'.');
+    const wchar_t* ext = ext_dot ? ext_dot : L"";
+
+    CodecHandler* ch = (CodecHandler*)malloc(sizeof(CodecHandler));
+    if (!ch) return NULL;
+    memset(ch, 0, sizeof(CodecHandler));
+    ch->type = CODEC_TYPE_NONE;
+
+#if defined(ENABLE_MPG123)
+    if (wcscmp(ext, L".mp3") == 0) {
+        MPG123Decoder* mp3 = MPG123Decoder_open_w(filename_w);
+        if (mp3) {
+            ch->type = CODEC_TYPE_MPG123;
+            ch->decoder = mp3;
+            return ch;
+        }
+    }
+#endif
+
+#if defined(ENABLE_SNDFILE)
+    SndFileDecoder* sf = sndfile_open_w(filename_w);
+    if (sf) {
+        ch->type = CODEC_TYPE_SNDFILE;
+        ch->decoder = sf;
+        return ch;
+    }
+#endif
+
+#if !defined(ENABLE_SNDFILE) && !defined(ENABLE_MPG123)
+    printf("No codec had been chosen before compiling. Next time, choose at least one of them.\n");
+#else
+    free(ch);
+    return NULL;
+#endif
+}
+#endif
+
 CodecHandler* codec_open(const char* filename) {
     if (!filename) return NULL;
     const char* filetype = get_file_format(filename);

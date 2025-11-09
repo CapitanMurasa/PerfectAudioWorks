@@ -1,7 +1,6 @@
 #ifndef CODECHANDLER_H
 #define CODECHANDLER_H
 
-
 #include "libsndfiledecoder.h"
 #include "mpg123decoder.h"
 #include "../miscellaneous/file.h"
@@ -13,12 +12,17 @@ typedef enum {
     CODEC_TYPE_NONE = 0,
     CODEC_TYPE_SNDFILE,
     CODEC_TYPE_MPG123
-    // CODEC_TYPE_FFMPEG
 } CodecType;
 
 typedef struct CodecHandler CodecHandler;
 
 CodecHandler* codec_open(const char* filename);
+
+#ifdef _WIN32
+#include <wchar.h>
+CodecHandler* codec_open_w(const wchar_t* filename_w);
+#endif
+
 int codec_get_channels(CodecHandler* ch);
 long codec_get_total_frames(CodecHandler* ch);
 long codec_get_current_frame(CodecHandler* ch);

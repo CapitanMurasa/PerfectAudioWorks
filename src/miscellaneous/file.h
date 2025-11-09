@@ -12,7 +12,6 @@ typedef struct {
     char album[INFO_BUFFER_SIZE];
     char genre[INFO_BUFFER_SIZE];
 
-
     unsigned char* cover_image;
     size_t cover_size;
 
@@ -23,9 +22,12 @@ extern "C" {
 #endif
 
     const char* get_file_format(const char* filename);
-
     int get_metadata(const char* filename, FileInfo* info);
 
+    #ifdef _WIN32
+    #include <wchar.h>
+    int get_metadata_w(const wchar_t* filename_w, FileInfo* info);
+    #endif
 
     void FileInfo_cleanup(FileInfo* info);
 
@@ -33,4 +35,4 @@ extern "C" {
 }
 #endif
 
-#endif 
+#endif

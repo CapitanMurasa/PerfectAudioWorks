@@ -6,6 +6,7 @@
 
 int main(int argc, char* argv[]){
     setvbuf(stdout, NULL, _IONBF, 0);
+    setlocale(LC_ALL, ".UTF-8");
     QApplication a(argc, argv);
     PaError err = Pa_Initialize();
     if (err != paNoError) {

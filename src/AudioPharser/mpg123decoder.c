@@ -1,7 +1,57 @@
 #include "mpg123decoder.h"
 #include <string.h>
 #include <stdlib.h>
-#include <mpg123.h>
+#include <mpg123.h> // <-- FIX 3: Added missing include
+#include <stdio.h> // <-- FIX 4: Added missing include (for SEEK_SET)
+
+#ifdef _WIN32
+#include <wchar.h>
+
+MPG123Decoder* MPG123Decoder_open_w(const wchar_t* filename_w) {
+    if (mpg123_init() != MPG123_OK) return NULL;
+
+    MPG123Decoder* dec = (MPG123Decoder*)malloc(sizeof(MPG123Decoder));
+    if (!dec) return NULL;
+
+    memset(dec, 0, sizeof(MPG123Decoder));
+
+    dec->mh = mpg123_new(NULL, NULL);
+    if (!dec->mh) {
+        free(dec);
+        return NULL;
+    }
+
+    if (mpg123_open64(dec->mh, filename_w) != MPG123_OK) {
+        mpg123_delete(dec->mh);
+        free(dec);
+        return NULL;
+    }
+
+    long rate;
+    int channels, encoding;
+    if (mpg123_getformat(dec->mh, &rate, &channels, &encoding) != MPG123_OK) {
+        mpg123_close(dec->mh);
+        mpg123_delete(dec->mh);
+        free(dec);
+        return NULL;
+    }
+
+    mpg123_format_none(dec->mh);
+    if (mpg123_format(dec->mh, rate, channels, MPG123_ENC_SIGNED_16) != MPG123_OK) {
+        mpg123_close(dec->mh);
+        mpg123_delete(dec->mh);
+        free(dec);
+        return NULL;
+    }
+
+    dec->channels = channels;
+    dec->samplerate = rate;
+    dec->current_frame = 0;
+    dec->total_frames = mpg123_length(dec->mh);
+
+    return dec;
+}
+#endif // <-- FIX 5: This was missing, your file had #endif in the wrong place
 
 MPG123Decoder* MPG123Decoder_open(const char* filename) {
     if (mpg123_init() != MPG123_OK) return NULL;
@@ -32,7 +82,6 @@ MPG123Decoder* MPG123Decoder_open(const char* filename) {
         return NULL;
     }
 
-    // Always decode MP3 as signed 16-bit
     mpg123_format_none(dec->mh);
     if (mpg123_format(dec->mh, rate, channels, MPG123_ENC_SIGNED_16) != MPG123_OK) {
         mpg123_close(dec->mh);

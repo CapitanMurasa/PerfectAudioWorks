@@ -46,12 +46,21 @@ endif()
 set(TAGLIB_DIR "${CMAKE_SOURCE_DIR}/extern/taglib")
 if(EXISTS ${TAGLIB_DIR}/CMakeLists.txt)
     message(STATUS "Using bundled TagLib from ${TAGLIB_DIR}")
+
+    # --- THIS IS THE FIX ---
+    # Force TagLib's Windows Unicode support ON before including it.
+    if(WIN32 OR MINGW)
+        set(ENABLE_WIN32_ENCODING ON CACHE BOOL "Force Win32 encoding for TagLib")
+    endif()
+    # --- END OF FIX ---
+
     add_subdirectory(${TAGLIB_DIR} EXCLUDE_FROM_ALL)
     include_directories(${TAGLIB_DIR}/taglib)
     set(TAGLIB_TARGET tag)
 else()
     message(FATAL_ERROR "TagLib source not found. Clone it under extern/taglib.")
 endif()
+
 
 # --- SndFile & MPG123 ---
 if(ENABLE_SNDFILE)
