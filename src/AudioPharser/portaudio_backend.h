@@ -5,17 +5,15 @@
 #include <portaudio.h>
 #include <stdint.h>
 
-// --- Cross-Platform Threading Fix ---
+
 #ifdef _WIN32
 #include <windows.h>
-// Use the standard Windows synchronization object as the substitute
 typedef CRITICAL_SECTION pa_mutex_t;
 #else
 #include <pthread.h>
-// Use the standard POSIX name
+
 typedef pthread_mutex_t pa_mutex_t;
 #endif
-// ------------------------------------
 
 #ifdef __cplusplus
 extern "C" {
