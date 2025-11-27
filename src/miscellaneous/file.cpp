@@ -3,6 +3,7 @@
 #include <string.h> 
 #include <stdlib.h> 
 #include <wchar.h>
+#include <iostream>
 
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
@@ -75,6 +76,8 @@ extern "C" {
 #ifdef _WIN32
     int get_metadata_w(const wchar_t* filename_w, FileInfo* info) {
         memset(info, 0, sizeof(FileInfo));
+
+        std::cout << filename_w << std::endl;
 
         const char* type = get_file_format_w(filename_w);
         strncpy(info->format, type, sizeof(info->format) - 1);

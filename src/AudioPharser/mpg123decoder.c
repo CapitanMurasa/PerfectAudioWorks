@@ -1,10 +1,11 @@
 #include "mpg123decoder.h"
 #include <string.h>
 #include <stdlib.h>
-#include <mpg123.h> // <-- FIX 3: Added missing include
-#include <stdio.h> // <-- FIX 4: Added missing include (for SEEK_SET)
+#include <mpg123.h> 
+#include <stdio.h> 
 
 #ifdef _WIN32
+
 #include <wchar.h>
 
 MPG123Decoder* MPG123Decoder_open_w(const wchar_t* filename_w) {
@@ -21,11 +22,11 @@ MPG123Decoder* MPG123Decoder_open_w(const wchar_t* filename_w) {
         return NULL;
     }
 
-    if (mpg123_open64(dec->mh, filename_w) != MPG123_OK) {
-        mpg123_delete(dec->mh);
-        free(dec);
-        return NULL;
-    }
+    // if (mpg123_open_w(dec->mh, filename_w) != MPG123_OK) {
+    //     mpg123_delete(dec->mh);
+    //     free(dec);
+    //     return NULL;
+    // }
 
     long rate;
     int channels, encoding;
@@ -51,7 +52,7 @@ MPG123Decoder* MPG123Decoder_open_w(const wchar_t* filename_w) {
 
     return dec;
 }
-#endif // <-- FIX 5: This was missing, your file had #endif in the wrong place
+#endif // <-- FIX 5: This #endif was missing
 
 MPG123Decoder* MPG123Decoder_open(const char* filename) {
     if (mpg123_init() != MPG123_OK) return NULL;

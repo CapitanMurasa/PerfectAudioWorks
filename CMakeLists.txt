@@ -27,7 +27,7 @@ set(SOURCES
 # --- This block handles both Linux/WSL and MinGW ---
 if(MINGW)
     message(STATUS "Using MinGW (pacman) configuration.")
-    add_definitions(-D_WIN32) # <-- important for UTF-16 conversions
+    add_definitions(-D_WIN32) 
 else()
     message(STATUS "Using Unix/Linux (WSL) configuration.")
 endif()
@@ -42,25 +42,25 @@ else()
     message(FATAL_ERROR "PortAudio not found. Install 'portaudio19-dev' or 'mingw-w64-ucrt-x86_64-portaudio'")
 endif()
 
+
 # --- TagLib (Internal Build) ---
 set(TAGLIB_DIR "${CMAKE_SOURCE_DIR}/extern/taglib")
 if(EXISTS ${TAGLIB_DIR}/CMakeLists.txt)
     message(STATUS "Using bundled TagLib from ${TAGLIB_DIR}")
-
-    # --- THIS IS THE FIX ---
-    # Force TagLib's Windows Unicode support ON before including it.
-    if(WIN32 OR MINGW)
-        set(ENABLE_WIN32_ENCODING ON CACHE BOOL "Force Win32 encoding for TagLib")
-    endif()
-    # --- END OF FIX ---
+    
 
     add_subdirectory(${TAGLIB_DIR} EXCLUDE_FROM_ALL)
     include_directories(${TAGLIB_DIR}/taglib)
     set(TAGLIB_TARGET tag)
+
+    if(WIN32 OR MINGW)
+        target_compile_definitions(tag PRIVATE TAGLIB_WITH_WINDOWS_ENCODING)
+    endif()
+
+    
 else()
     message(FATAL_ERROR "TagLib source not found. Clone it under extern/taglib.")
 endif()
-
 
 # --- SndFile & MPG123 ---
 if(ENABLE_SNDFILE)
