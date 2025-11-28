@@ -3,7 +3,7 @@ project(PerfectAudioWorks LANGUAGES CXX C)
 
 # --- Compiler Settings ---
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+    set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # --- Qt Setup ---
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
@@ -21,8 +21,7 @@ set(SOURCES
     src/AudioPharser/PortAudioHandler.cpp
     src/AudioPharser/CodecHandler.c
     src/AudioPharser/portaudio_backend.c
-    src/miscellaneous/file.cpp
-)
+    src/miscellaneous/file.cpp)
 
 # --- This block handles both Linux/WSL and MinGW ---
 if(MINGW)
