@@ -9,7 +9,7 @@ Currently, the player:
 
 * Uses **PortAudio** to initialize the audio output buffer.
 * Uses **Qt6** for rendering the UI.
-* Uses **Libtag** to pharse album art and metadata info (so far works on windows)
+* Uses **Libtag** to pharse album art and metadata info (so far works on Linux)
 
 ---
 
