@@ -9,8 +9,7 @@ Currently, the player:
 
 * Uses **PortAudio** to initialize the audio output buffer.
 * Uses **Qt6** for rendering the UI.
-
-> ⚠️ At this stage, PerfectAudioWorks works only on **Linux**. Windows support is planned.
+* Uses **Libtag** to pharse album art and metadata info (so far works on windows)
 
 ---
 
@@ -68,6 +67,12 @@ Currently, the player:
   * `libsndfile` (WAV, FLAC, OGG, Opus)
   * `mpg123` (MP3)
 
+
+### Cloning repository
+
+```
+git clone --recursive https://github.com/CapitanMurasa/PerfectAudioWorks
+```
 ### Ubuntu / Debian
 
 ```
@@ -81,6 +86,14 @@ sudo apt install portaudio19-dev qt6-base-dev cmake build-essential \
 ```
 sudo pacman -S portaudio qt6-base cmake make gcc \
                libsndfile mpg123
+```
+
+### Windows
+Although windows release is out, it still less stable than linux release
+install qt framework from [qt's official site](https://www.qt.io/download-dev)
+install mingw compiler and then in mingw console install required components
+```
+sudo pacman -S pacman -S mingw-w64-x86_64-portaudio mingw-w64-x86_64-libsndfile mingw-w64-x86_64-mpg123
 ```
 
 ### Build Instructions
@@ -99,7 +112,6 @@ make
 * CMake automatically skips building source files for any disabled codecs.
 
 ---
-
 ## Usage
 
 Run the player:
@@ -121,11 +133,12 @@ Run the player:
 1. ~~**No sound output** if the program selects the default output, but your audio device is not set as system default.~~
    ✅ Fixed: you can now choose the device to play on, but playback still defaults to the system’s default device.
 
-2. **Crash on progress bar seek**: spamming left/right arrow keys after making the progress bar active may cause a crash.
-
+2. ~~**Crash on progress bar seek**: spamming left/right arrow keys after making the progress bar active may cause a crash.~~
+   ✅ Fixed
 3. ~~**Playing through mpg123 would result in white noise**~~
    ✅ Fixed: sample format conversion from int16 to float32 is now handled correctly.
 
+4. **Libtag on windows cannot find path to file** it seems libtag can't get file path on utf16
 ---
 
 ## License
