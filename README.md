@@ -82,9 +82,9 @@ sudo pacman -S portaudio qt6-base cmake make gcc \
 ```
 
 ### Windows
-Although windows release is out, it still less stable than linux release
-install qt framework from [qt's official site](https://www.qt.io/download-dev)
-install mingw compiler and then in mingw console install required components
+Although windows release is out, it still less stable than linux release <br>
+install qt framework from [qt's official site](https://www.qt.io/download-dev) <br>
+install mingw compiler and then in mingw console install required components 
 ```
 pacman -S mingw-w64-x86_64-portaudio mingw-w64-x86_64-libsndfile mingw-w64-x86_64-mpg123
 ```
