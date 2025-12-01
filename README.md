@@ -86,7 +86,7 @@ Although windows release is out, it still less stable than linux release
 install qt framework from [qt's official site](https://www.qt.io/download-dev)
 install mingw compiler and then in mingw console install required components
 ```
-sudo pacman -S pacman -S mingw-w64-x86_64-portaudio mingw-w64-x86_64-libsndfile mingw-w64-x86_64-mpg123
+pacman -S mingw-w64-x86_64-portaudio mingw-w64-x86_64-libsndfile mingw-w64-x86_64-mpg123
 ```
 
 ### Build Instructions
