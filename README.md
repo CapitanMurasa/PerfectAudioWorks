@@ -48,13 +48,6 @@ Currently, the player:
 | libsndfile | ✅        | `-DENABLE_SNDFILE` | Handles WAV, FLAC, OGG, Opus             |
 | mpg123     | ✅        | `-DENABLE_MPG123`  | Handles MP3 playback                     |
 
----
-
-## Screenshot
-
-![PAW_SCREENSHOT](https://cdn.discordapp.com/attachments/882608057979383869/1415279069297115248/image.png?ex=68c2a0d8&is=68c14f58&hm=171a8497ac1ca9192c9510b5120a5acfecdaad43dacb8565cb3c9cbd8bf36596&)
-
----
 
 ## Installation & Compilation
 
