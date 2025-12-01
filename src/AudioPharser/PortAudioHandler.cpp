@@ -1,5 +1,5 @@
 #include "PortAudioHandler.h"
-
+#include <string>
 
 PortaudioThread::PortaudioThread(QObject* parent)
     : QThread(parent),
@@ -41,7 +41,16 @@ void PortaudioThread::setAudioDevice(int device) {
 void PortaudioThread::StartPlayback() {
     if (m_filename.isEmpty()) return;
 
-    if (audio_play(&m_player, m_filename.toLocal8Bit().data(), audiodevice) != 0) {
+    int play_result = -1;
+#ifdef _WIN32
+    std::wstring w_filename = m_filename.toStdWString();
+    play_result = audio_play_w(&m_player, w_filename.c_str(), audiodevice);
+#else
+    QByteArray utf8_filename = m_filename.toUtf8();
+    play_result = audio_play(&m_player, utf8_filename.constData(), audiodevice);
+#endif
+
+    if (play_result != 0) {
         emit errorOccurred("Failed to start playback");
         return;
     }
@@ -87,7 +96,6 @@ void PortaudioThread::setPlayPause() {
     audio_pause(&m_player, m_isPaused ? 1 : 0);
 
     if (!m_isPaused && m_player.codec && m_player.stream) {
-
         m_streamStartTime = Pa_GetStreamTime(m_player.stream) - ((double)m_player.currentFrame / m_player.samplerate);
     }
 }

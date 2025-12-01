@@ -2,3 +2,6 @@
 .vscode/
 build
 test
+/.vs
+/CMakeSettings.json
+.qtcreator

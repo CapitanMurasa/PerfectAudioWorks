@@ -1,28 +1,40 @@
-#ifndef MPG123_DECODER_H
-#define MPG123_DECODER_H
+#ifndef MPG123DECODER_H
+#define MPG123DECODER_H
 
+#include <stdint.h>
+
+// Include wchar.h FIRST on Windows
+#ifdef _WIN32
+#include <wchar.h>
+#endif
+
+// Now include mpg123.h
 #include <mpg123.h>
-#include <stdlib.h>
-#include <stdio.h>
 
-typedef struct {
-    mpg123_handle *mh;
-    int channels;
-    long samplerate;
-    long current_frame;
-    long total_frames;
-} MPG123Decoder;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef struct {
+    mpg123_handle* mh;
+    int channels;
+    long samplerate;
+    long total_frames;
+    long current_frame;
+} MPG123Decoder; // <-- FIX 1: Removed the 'S' typo
+
 MPG123Decoder* MPG123Decoder_open(const char* filename);
+
+#ifdef _WIN32
+MPG123Decoder* MPG123Decoder_open_w(const wchar_t* filename_w);
+#endif
+
 int MPG123Decoder_get_channels(const MPG123Decoder* dec);
 int MPG123Decoder_get_samplerate(const MPG123Decoder* dec);
 long MPG123Decoder_get_total_frames(const MPG123Decoder* dec);
 long MPG123Decoder_get_current_frame(const MPG123Decoder* dec);
-long MPG123Decoder_read_int16(MPG123Decoder* dec, int16_t* buffer, int frames);
+long MPG123Decoder_read_int16(MPG123Decoder* dec, int16_t* buffer, int frames); // <-- FIX 2: Removed the 'S' typo
 long MPG123Decoder_seek(MPG123Decoder* dec, long frame);
 void MPG123Decoder_close(MPG123Decoder* dec);
 
@@ -30,4 +42,4 @@ void MPG123Decoder_close(MPG123Decoder* dec);
 }
 #endif
 
-#endif // MPG123_DECODER_H
+#endif // MPG123DECODER_H

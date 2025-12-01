@@ -8,9 +8,6 @@ About_PAW_gui::About_PAW_gui(QWidget *parent)
 {
     ui->setupUi(this);
 
-
-    // QLabel* extraLabel = new QLabel("Extra dynamic info", this);
-    // ui->dynamicLayout->addWidget(extraLabel);
 }
 
 About_PAW_gui::~About_PAW_gui()

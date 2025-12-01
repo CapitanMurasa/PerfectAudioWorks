@@ -1,25 +1,38 @@
-#pragma once
-#include <stddef.h>
+#ifndef FILE_H
+#define FILE_H
 
-typedef struct FileInfo {
-    char title[128];
-    char artist[128];
-    char album[128];
-    char genre[64];
-    char format[16];
-    int samplerate;
-    int channels;
-    long frames;
-    unsigned char* cover_image;  
+#include <stddef.h> 
+#define INFO_STRING_MAX_LEN 256
+#define INFO_BUFFER_SIZE (INFO_STRING_MAX_LEN + 1) 
+
+typedef struct {
+    char format[32];
+    char title[INFO_BUFFER_SIZE];
+    char artist[INFO_BUFFER_SIZE];
+    char album[INFO_BUFFER_SIZE];
+    char genre[INFO_BUFFER_SIZE];
+
+    unsigned char* cover_image;
     size_t cover_size;
+
 } FileInfo;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int get_metadata(const char *filename, FileInfo *info);
-const char* get_file_format(const char* filename);
+    const char* get_file_format(const char* filename);
+    int get_metadata(const char* filename, FileInfo* info);
+
+    #ifdef _WIN32
+    #include <wchar.h>
+    int get_metadata_w(const wchar_t* filename_w, FileInfo* info);
+    #endif
+
+    void FileInfo_cleanup(FileInfo* info);
+
 #ifdef __cplusplus
 }
+#endif
+
 #endif

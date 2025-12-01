@@ -1,70 +1,94 @@
 #include "libsndfiledecoder.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-SndFileDecoder* sndfile_open(const char* filename) {
-    if (!filename) return NULL;
+#ifdef _WIN32
+#include <wchar.h>
 
-    SndFileDecoder* dec = (SndFileDecoder*)malloc(sizeof(SndFileDecoder));
-    if (!dec) return NULL;
-    memset(dec, 0, sizeof(SndFileDecoder));
-
-    dec->file = sf_open(filename, SFM_READ, &dec->info);
-    if (!dec->file) {
-        free(dec);
+SndFileDecoder* sndfile_open_w(const wchar_t* filename_w) {
+    SndFileDecoder* decoder = (SndFileDecoder*)malloc(sizeof(SndFileDecoder));
+    if (!decoder) {
         return NULL;
     }
-    dec->current_frame = 0;
-    return dec;
+    
+    memset(decoder, 0, sizeof(SndFileDecoder));
+    decoder->info.format = 0;
+
+    decoder->file = sf_wchar_open(filename_w, SFM_READ, &decoder->info);
+
+    if (decoder->file == NULL) {
+        fwprintf(stderr, L"Error opening file %s: %s\n", filename_w, sf_strerror(NULL));
+        free(decoder);
+        return NULL;
+    }
+
+    decoder->current_frame = 0;
+    return decoder;
+}
+#endif
+
+SndFileDecoder* sndfile_open(const char* filename) {
+    SndFileDecoder* decoder = (SndFileDecoder*)malloc(sizeof(SndFileDecoder));
+    if (!decoder) {
+        return NULL;
+    }
+
+    memset(decoder, 0, sizeof(SndFileDecoder));
+    decoder->info.format = 0;
+    decoder->file = sf_open(filename, SFM_READ, &decoder->info);
+
+    if (decoder->file == NULL) {
+        fprintf(stderr, "Error opening file %s: %s\n", filename, sf_strerror(NULL));
+        free(decoder);
+        return NULL;
+    }
+
+    decoder->current_frame = 0;
+    return decoder;
 }
 
-sf_count_t sndfile_read_float(SndFileDecoder* dec, float* buffer, sf_count_t frames) {
-    if (!dec || !dec->file || !buffer || frames <= 0) return 0;
-
-
-    sf_count_t read_samples = sf_read_float(dec->file, buffer, frames * dec->info.channels);
-
-
-    sf_count_t read_frames = read_samples / dec->info.channels;
-
-    dec->current_frame += read_frames;
-    if (dec->current_frame > dec->info.frames)
-        dec->current_frame = dec->info.frames;
-
+sf_count_t sndfile_read_float(SndFileDecoder* decoder, float* buffer, sf_count_t frames) {
+    if (!decoder || !decoder->file) return 0;
+    sf_count_t read_frames = sf_readf_float(decoder->file, buffer, frames);
+    decoder->current_frame += read_frames;
     return read_frames;
 }
 
-sf_count_t sndfile_seek(SndFileDecoder* dec, sf_count_t frame) {
-    if (!dec || !dec->file) return -1;
-
-    if (frame < 0) frame = 0;
-    if (frame >= dec->info.frames) frame = dec->info.frames - 1;
-
-    sf_count_t result = sf_seek(dec->file, frame, SF_SEEK_SET);
-    if (result >= 0)
-        dec->current_frame = result;
-    return result;
+sf_count_t sndfile_seek(SndFileDecoder* decoder, sf_count_t frame) {
+    if (!decoder || !decoder->file) return 0;
+    sf_count_t result = sf_seek(decoder->file, frame, SEEK_SET);
+    if (result >= 0) {
+        decoder->current_frame = result;
+    }
+    return decoder->current_frame;
 }
 
-sf_count_t sndfile_get_current_frame(SndFileDecoder* dec) {
-    if (!dec) return -1;
-    return dec->current_frame;
+sf_count_t sndfile_get_current_frame(SndFileDecoder* decoder) {
+    if (!decoder) return 0;
+    return decoder->current_frame;
 }
 
-sf_count_t sndfile_get_total_frames(SndFileDecoder* dec) {
-    return dec ? dec->info.frames : 0;
+sf_count_t sndfile_get_total_frames(SndFileDecoder* decoder) {
+    if (!decoder) return 0;
+    return decoder->info.frames;
 }
 
-int sndfile_get_channels(SndFileDecoder* dec) {
-    return dec ? dec->info.channels : 0;
+int sndfile_get_channels(SndFileDecoder* decoder) {
+    if (!decoder) return 0;
+    return decoder->info.channels;
 }
 
-int sndfile_get_samplerate(SndFileDecoder* dec) {
-    return dec ? dec->info.samplerate : 0;
+int sndfile_get_samplerate(SndFileDecoder* decoder) {
+    if (!decoder) return 0;
+    return decoder->info.samplerate;
 }
 
-void sndfile_close(SndFileDecoder* dec) {
-    if (!dec) return;
-    if (dec->file) sf_close(dec->file);
-    free(dec);
+void sndfile_close(SndFileDecoder* decoder) {
+    if (decoder) {
+        if (decoder->file) {
+            sf_close(decoder->file);
+        }
+        free(decoder);
+    }
 }

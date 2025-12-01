@@ -6,7 +6,8 @@
 #include <QFileDialog>
 #include <QTimer>
 #include <QDebug>
-#include <QMessageBox> 
+#include <QMessageBox>
+#include <QAction>
 
 #include "../AudioPharser/PortAudioHandler.h" 
 #include "../miscellaneous/file.h" 
@@ -35,6 +36,8 @@ public:
     
     PortaudioThread& getAudioThread() { return *m_audiothread; }
 
+protected:
+    void resizeEvent(QResizeEvent* event) override;
 
 private slots:
    
@@ -45,6 +48,9 @@ private slots:
     void StopPlayback();
     void PlayPreviousItem();
     void PlayNextItem();
+    void showPlaylistContextMenu(const QPoint &pos);
+    void playSelectedItem();
+    void deleteSelectedItem();
     
     void handlePlaybackProgress(int currentFrame, int totalFrames, int sampleRate);
     void handleTotalFileInfo(int totalFrames,int channels, int sampleRate, const char* codecname);
@@ -56,13 +62,19 @@ private slots:
 private:
 
     QTimer *m_updateTimer; 
+    QAction *m_deleteAction;
     PortaudioThread* m_audiothread; 
     QString m_currentFile; 
     FileInfo filemetadata;
-
+    QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
     About_PAW_gui about;
+
     QString floatToMMSS(float totalSeconds);
+    void updateAlbumArt();
+    void SetupUIElements();
+    void SetupQtActions();
+    QString returnItemPath();
 
     bool finished_playing;
 

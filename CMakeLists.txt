@@ -1,17 +1,67 @@
 cmake_minimum_required(VERSION 3.10)
-project(PAW LANGUAGES C CXX)
+project(PerfectAudioWorks LANGUAGES CXX C)
 
+# --- Compiler Settings ---
+set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# --- Qt Setup ---
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
-qt_standard_project_setup()
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
 
-
+# --- CMake Options for Decoders ---
 option(ENABLE_SNDFILE "Enable libsndfile support" ON)
 option(ENABLE_MPG123 "Enable mpg123 support" ON)
 
+# --- Source Files ---
+set(SOURCES
+    src/main.cpp
+    src/AudioPharser/PortAudioHandler.cpp
+    src/AudioPharser/CodecHandler.c
+    src/AudioPharser/portaudio_backend.c
+    src/miscellaneous/file.cpp)
 
-include_directories(src/AudioPharser)
+# --- This block handles both Linux/WSL and MinGW ---
+if(MINGW)
+    message(STATUS "Using MinGW (pacman) configuration.")
+    add_definitions(-D_WIN32) 
+else()
+    message(STATUS "Using Unix/Linux (WSL) configuration.")
+endif()
 
+# --- PortAudio ---
+find_path(PORTAUDIO_INCLUDE_DIR portaudio.h)
+find_library(PORTAUDIO_LIB NAMES portaudio)
+if(PORTAUDIO_INCLUDE_DIR AND PORTAUDIO_LIB)
+    include_directories(${PORTAUDIO_INCLUDE_DIR})
+    set(PORTAUDIO_TARGET ${PORTAUDIO_LIB})
+else()
+    message(FATAL_ERROR "PortAudio not found. Install 'portaudio19-dev' or 'mingw-w64-ucrt-x86_64-portaudio'")
+endif()
+
+
+# --- TagLib (Internal Build) ---
+set(TAGLIB_DIR "${CMAKE_SOURCE_DIR}/extern/taglib")
+if(EXISTS ${TAGLIB_DIR}/CMakeLists.txt)
+    message(STATUS "Using bundled TagLib from ${TAGLIB_DIR}")
+    
+
+    add_subdirectory(${TAGLIB_DIR} EXCLUDE_FROM_ALL)
+    include_directories(${TAGLIB_DIR}/taglib)
+    set(TAGLIB_TARGET tag)
+
+    if(WIN32 OR MINGW)
+        target_compile_definitions(tag PRIVATE TAGLIB_WITH_WINDOWS_ENCODING)
+    endif()
+
+    
+else()
+    message(FATAL_ERROR "TagLib source not found. Clone it under extern/taglib.")
+endif()
+
+# --- SndFile & MPG123 ---
 if(ENABLE_SNDFILE)
     find_path(SNDFILE_INCLUDE_DIR sndfile.h)
     find_library(SNDFILE_LIB NAMES sndfile)
@@ -19,9 +69,8 @@ if(ENABLE_SNDFILE)
         message(STATUS "libsndfile enabled")
         add_definitions(-DENABLE_SNDFILE)
         include_directories(${SNDFILE_INCLUDE_DIR})
-    else()
-        message(WARNING "libsndfile requested but not found, disabling")
-        set(ENABLE_SNDFILE OFF)
+        set(SNDFILE_TARGET ${SNDFILE_LIB})
+        list(APPEND SOURCES src/AudioPharser/libsndfiledecoder.c)
     endif()
 endif()
 
@@ -32,38 +81,12 @@ if(ENABLE_MPG123)
         message(STATUS "mpg123 enabled")
         add_definitions(-DENABLE_MPG123)
         include_directories(${MPG123_INCLUDE_DIR})
-    else()
-        message(WARNING "mpg123 requested but not found, disabling")
-        set(ENABLE_MPG123 OFF)
+        set(MPG123_TARGET ${MPG123_LIB})
+        list(APPEND SOURCES src/AudioPharser/mpg123decoder.c)
     endif()
 endif()
 
-
-
-find_path(PORTAUDIO_INCLUDE_DIR portaudio.h)
-find_library(PORTAUDIO_LIB NAMES portaudio)
-include_directories(${PORTAUDIO_INCLUDE_DIR})
-
-
-set(SOURCES
-    src/main.cpp
-    src/AudioPharser/PortAudioHandler.cpp
-    src/AudioPharser/CodecHandler.c
-    src/AudioPharser/portaudio_backend.c
-    src/miscellaneous/file.c
-)
-
-if(ENABLE_SNDFILE)
-    list(APPEND SOURCES src/AudioPharser/libsndfiledecoder.c)
-endif()
-
-if(ENABLE_MPG123)
-    list(APPEND SOURCES src/AudioPharser/mpg123decoder.c)
-endif()
-
-
-
-# GUI files
+# --- GUI Sources ---
 list(APPEND SOURCES
     src/PAW_GUI/about_paw_gui.ui
     src/PAW_GUI/about_paw_gui.cpp
@@ -73,21 +96,26 @@ list(APPEND SOURCES
     src/PAW_GUI/main_paw_widget.cpp
 )
 
+# --- Executable Definition ---
+add_executable(PAW ${SOURCES})
 
-qt_add_executable(PAW ${SOURCES})
-
+# --- Linking ---
 target_link_libraries(PAW PRIVATE
     Qt6::Core
     Qt6::Widgets
-    ${PORTAUDIO_LIB}
+    ${PORTAUDIO_TARGET}
+    ${TAGLIB_TARGET}
 )
 
-if(ENABLE_SNDFILE)
-    target_link_libraries(PAW PRIVATE ${SNDFILE_LIB})
-endif()
-if(ENABLE_MPG123)
-    target_link_libraries(PAW PRIVATE ${MPG123_LIB})
+if(SNDFILE_TARGET)
+    target_link_libraries(PAW PRIVATE ${SNDFILE_TARGET})
 endif()
 
+if(MPG123_TARGET)
+    target_link_libraries(PAW PRIVATE ${MPG123_TARGET})
+endif()
 
-target_compile_options(PAW PRIVATE -Wall -Wextra -O2)
+# --- Windows Specific ---
+if (WIN32)
+    target_link_libraries(PAW PRIVATE Ws2_32)
+endif()
