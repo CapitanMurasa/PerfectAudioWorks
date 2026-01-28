@@ -1,3 +1,6 @@
 [submodule "extern/taglib"]
 	path = extern/taglib
 	url = https://github.com/taglib/taglib
+[submodule "extern/portaudio"]
+	path = extern/portaudio
+	url = https://github.com/PortAudio/portaudio
