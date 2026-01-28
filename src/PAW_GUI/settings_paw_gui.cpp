@@ -1,39 +1,49 @@
-#include "settings_paw_gui.h" // Correct include
-#include "ui_settings_paw_gui.h" 
+#include "settings_paw_gui.h"
+#include "ui_settings_paw_gui.h"
+#include <QPushButton>
 
-
-Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, QWidget *parent) // Correct class name
+Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, QWidget* parent)
     : QMainWindow(parent)
-    , ui(new Ui::Settings_PAW_gui), m_audiothread(audioThread)
+    , ui(new Ui::Settings_PAW_gui)
+    , m_audiothread(audioThread)
 {
     ui->setupUi(this);
 
-    connect(ui->AudioSettings, &QCommandLinkButton::clicked, this, &Settings_PAW_gui::showAudioSettings);
-    connect(ui->ApplyButtion, &QCommandLinkButton::clicked,this, &Settings_PAW_gui::applySettings);
-    
-    QList<QPair<QString, int>> availableDevices = m_audiothread->GetAllAvailableOutputDevices();
-    for (const auto& device : availableDevices) {
-        audioDeviceComboBox->addItem(device.first, device.second);
+    connect(ui->settingsMenu, &QListWidget::currentRowChanged,
+        ui->settingsStack, &QStackedWidget::setCurrentIndex);
+
+    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &Settings_PAW_gui::applySettings);
+    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &Settings_PAW_gui::close);
+
+    auto applyButton = ui->buttonBox->button(QDialogButtonBox::Apply);
+    if (applyButton) {
+        connect(applyButton, &QPushButton::clicked, this, &Settings_PAW_gui::applySettings);
     }
+
+    if (m_audiothread) {
+        QList<QPair<QString, int>> availableDevices = m_audiothread->GetAllAvailableOutputDevices();
+        for (const auto& device : availableDevices) {
+            ui->audioDeviceComboBox->addItem(device.first, device.second);
+        }
+    }
+
+    ui->settingsMenu->setCurrentRow(0);
 }
 
-Settings_PAW_gui::~Settings_PAW_gui() // Correct class name
+Settings_PAW_gui::~Settings_PAW_gui()
 {
     delete ui;
 }
 
-
-void Settings_PAW_gui::showAudioSettings(){
-    ui->EntryContent->setRowCount(2);
-    ui->EntryContent->setColumnCount(2);
-
-    ui->EntryContent->setCellWidget(0, 1, audioDeviceComboBox);
-}
 void Settings_PAW_gui::applySettings() {
-    if (m_audiothread) { // Check if the pointer is not null
-        int selectedPaDeviceIndex = audioDeviceComboBox->currentData().toInt();
+    if (m_audiothread) {
+        int selectedPaDeviceIndex = ui->audioDeviceComboBox->currentData().toInt();
         m_audiothread->setAudioDevice(selectedPaDeviceIndex);
-    } else {
+
+        qDebug() << "Applied Audio Device Index:" << selectedPaDeviceIndex;
+    }
+    else {
         qWarning() << "PortaudioThread is null, cannot set audio device.";
     }
 }
+

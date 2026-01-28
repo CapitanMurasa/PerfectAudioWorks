@@ -13,6 +13,7 @@ void Main_PAW_widget::SetupUIElements() {
 
     connect(ui->TimelineSlider, &QSlider::valueChanged, this, &Main_PAW_widget::onSliderValueChanged);
     connect(ui->PlayPause, &QPushButton::clicked, this, &Main_PAW_widget::PlayPauseButton);
+    connect(ui->Loop, &QPushButton::clicked, this, &Main_PAW_widget::SetLoop);
     connect(ui->actionSettings, &QAction::triggered, this, &Main_PAW_widget::openSettings);
     connect(ui->actionAbout, &QAction::triggered, this, &Main_PAW_widget::openAbout);
     connect(ui->actionadd_files_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addFilesToPlaylist);
@@ -186,6 +187,9 @@ void Main_PAW_widget::handleTotalFileInfo(int totalFrames, int channels, int sam
 void Main_PAW_widget::handlePlaybackFinished() {
     ui->TimelineSlider->setValue(0);
     ui->CurrentFileDuration->setText("00:00");
+    if (ToggleRepeatButton && !m_currentFile.isEmpty()) {
+        start_playback(m_currentFile); 
+    }
 }
 
 void Main_PAW_widget::on_actionopen_file_triggered() {
@@ -352,6 +356,19 @@ void Main_PAW_widget::openSettings() {
 
 void Main_PAW_widget::openAbout() {
     about.show();
+}
+
+void Main_PAW_widget::SetLoop() {
+    ToggleRepeatButton = !ToggleRepeatButton;
+
+    qDebug() << "Looping enabled:" << (ToggleRepeatButton ? "true" : "false");
+
+    if (ToggleRepeatButton) {
+        ui->Loop->setStyleSheet("color: green; font-weight: bold;");
+    }
+    else {
+        ui->Loop->setStyleSheet("");
+    }
 }
 
 QString Main_PAW_widget::returnItemPath() {

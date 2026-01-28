@@ -2,45 +2,34 @@
 #define Settings_PAW_gui_H
 
 #include <QMainWindow>
-
-#include <QFileDialog>
-#include <QTimer>
 #include <QDebug>
-#include <QMessageBox> 
-#include <QComboBox>
+#include <QComboBox> 
 
 #include "../AudioPharser/PortAudioHandler.h" 
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
-class Settings_PAW_gui;
+    class Settings_PAW_gui;
 }
 QT_END_NAMESPACE
 
-
 class Settings_PAW_gui : public QMainWindow
 {
-        Q_OBJECT
+    Q_OBJECT
 
-    public:
-        
-        explicit Settings_PAW_gui(PortaudioThread* audioThread ,QWidget *parent = nullptr);
-        ~Settings_PAW_gui() override;
+public:
+    explicit Settings_PAW_gui(PortaudioThread* audioThread, QWidget* parent = nullptr);
+    ~Settings_PAW_gui() override;
 
-
-    private:
-        // int CurrentSettingsEntry;
-        PortaudioThread* m_audiothread; 
-        Ui::Settings_PAW_gui *ui;
-        QComboBox* audioDeviceComboBox = new QComboBox();
-
-    private slots:
-
-    void showAudioSettings();
+private slots:
     void applySettings();
-    /*disabled for a while
-    void showUISettings();
-    void showPluginsSettings();
-    */
+
+
+private:
+    Ui::Settings_PAW_gui* ui;
+    PortaudioThread* m_audiothread;
+
+
 };
-#endif 
+
+#endif

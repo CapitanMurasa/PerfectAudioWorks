@@ -51,6 +51,7 @@ private slots:
     void showPlaylistContextMenu(const QPoint &pos);
     void playSelectedItem();
     void deleteSelectedItem();
+    void SetLoop();
     
     void handlePlaybackProgress(int currentFrame, int totalFrames, int sampleRate);
     void handleTotalFileInfo(int totalFrames,int channels, int sampleRate, const char* codecname);
@@ -77,7 +78,7 @@ private:
     QString returnItemPath();
 
     bool finished_playing;
-    bool ToggleRepeatButton;
+    bool ToggleRepeatButton = false;
 
     Ui::Main_PAW_widget *ui; 
 };
