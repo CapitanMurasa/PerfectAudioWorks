@@ -1,12 +1,12 @@
 #include "main_paw_widget.h"
 #include "ui_main_paw_widget.h"
 #include <cmath> 
-#include <string>       // <-- Add this include
-#include <QMenu>        // <-- Add these includes
-#include <QAction>      // <-- if they aren't
-#include <QMessageBox>  // <-- already in
-#include <QFileDialog>  // <-- main_paw_widget.h
-#include <QFileInfo>    // <-- Add this include
+#include <string>      
+#include <QMenu>        
+#include <QAction>      
+#include <QMessageBox>  
+#include <QFileDialog>  
+#include <QFileInfo>    
 
 void Main_PAW_widget::SetupUIElements(){
     ui->Playlist->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -62,9 +62,7 @@ Main_PAW_widget::~Main_PAW_widget()
     delete ui;
 }
 
-//
-// VVV THIS FUNCTION IS MODIFIED VVV
-//
+
 void Main_PAW_widget::start_playback(const QString &filename) {
 
     StopPlayback();
@@ -72,7 +70,7 @@ void Main_PAW_widget::start_playback(const QString &filename) {
     m_currentFile = filename;
     m_audiothread->setFile(m_currentFile);
 
-    // --- FIX 1: THE METADATA/TAGLIB FIX ---
+
     int metadata_result = -1;
 #ifdef _WIN32
     std::wstring w_filePath = filename.toStdWString();
@@ -81,7 +79,7 @@ void Main_PAW_widget::start_playback(const QString &filename) {
     QByteArray utf8_filePath = filename.toUtf8();
     metadata_result = get_metadata(utf8_filePath.constData(), &filemetadata);
 #endif
-    // --- END OF FIX 1 ---
+
 
     if (metadata_result == 0) {
         QPixmap coverArt;
@@ -114,7 +112,7 @@ void Main_PAW_widget::start_playback(const QString &filename) {
         ui->Filename->setText(title);
         ui->Artist->setText(artist);
     } else {
-        // Failed to get metadata
+
         ui->Filename->setText(m_currentFile.section('/', -1));
         ui->Artist->setText("");
         m_originalAlbumArt = QPixmap();
@@ -124,9 +122,9 @@ void Main_PAW_widget::start_playback(const QString &filename) {
     m_audiothread->start(); 
     m_updateTimer->start(100); 
 
-    // --- FIX 2: THE PAUSE BUTTON FIX ---
+
     ui->PlayPause->setText("||"); 
-    // --- END OF FIX 2 ---
+
 }
 
 
@@ -181,7 +179,6 @@ void Main_PAW_widget::handleTotalFileInfo(int totalFrames,int channels, int samp
 
 
 void Main_PAW_widget::handlePlaybackFinished() {
-    m_updateTimer->stop();
     ui->TimelineSlider->setValue(0);
     ui->CurrentFileDuration->setText("00:00");
 }
@@ -216,9 +213,7 @@ void Main_PAW_widget::StopPlayback(){
     }
 }
 
-//
-// VVV THIS FUNCTION IS MODIFIED VVV
-//
+
 void Main_PAW_widget::addFilesToPlaylist() {
     QStringList files = QFileDialog::getOpenFileNames(
         this,
@@ -230,7 +225,7 @@ void Main_PAW_widget::addFilesToPlaylist() {
     for (const QString &file : files) {
         QString displayText;
         
-        // --- FIX 1: THE METADATA/TAGLIB FIX ---
+
         int metadata_result = -1;
 #ifdef _WIN32
         std::wstring w_filePath = file.toStdWString();
@@ -239,7 +234,6 @@ void Main_PAW_widget::addFilesToPlaylist() {
         QByteArray utf8_filePath = file.toUtf8();
         metadata_result = get_metadata(utf8_filePath.constData(), &filemetadata);
 #endif
-        // --- END OF FIX 1 ---
 
         if (metadata_result == 0) {
             QString title = (strlen(filemetadata.title) > 0)
@@ -266,7 +260,7 @@ void Main_PAW_widget::addFilesToPlaylist() {
 
 void Main_PAW_widget::playSelectedItem(){
     QString filename = returnItemPath();
-    if (filename.isEmpty()) return; // Add check for empty path
+    if (filename.isEmpty()) return; 
     qDebug() << "Selected file:" << filename;
     if (m_audiothread->isRunning()) {
         m_audiothread->stopPlayback();
@@ -357,7 +351,7 @@ void Main_PAW_widget::openAbout(){
 
 QString Main_PAW_widget::returnItemPath(){
     QListWidgetItem* item = ui->Playlist->currentItem();
-    if (!item) return QString(); // Add null check
+    if (!item) return QString(); 
     QString filepath = item->data(Qt::UserRole).toString();
     return filepath;
 }

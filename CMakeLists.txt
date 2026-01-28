@@ -43,23 +43,7 @@ endif()
 
 
 # --- TagLib (Internal Build) ---
-set(TAGLIB_DIR "${CMAKE_SOURCE_DIR}/extern/taglib")
-if(EXISTS ${TAGLIB_DIR}/CMakeLists.txt)
-    message(STATUS "Using bundled TagLib from ${TAGLIB_DIR}")
-    
-
-    add_subdirectory(${TAGLIB_DIR} EXCLUDE_FROM_ALL)
-    include_directories(${TAGLIB_DIR}/taglib)
-    set(TAGLIB_TARGET tag)
-
-    if(WIN32 OR MINGW)
-        target_compile_definitions(tag PRIVATE TAGLIB_WITH_WINDOWS_ENCODING)
-    endif()
-
-    
-else()
-    message(FATAL_ERROR "TagLib source not found. Clone it under extern/taglib.")
-endif()
+find_package(TagLib REQUIRED)
 
 # --- SndFile & MPG123 ---
 if(ENABLE_SNDFILE)
@@ -104,7 +88,7 @@ target_link_libraries(PAW PRIVATE
     Qt6::Core
     Qt6::Widgets
     ${PORTAUDIO_TARGET}
-    ${TAGLIB_TARGET}
+    TagLib::TagLib
 )
 
 if(SNDFILE_TARGET)
