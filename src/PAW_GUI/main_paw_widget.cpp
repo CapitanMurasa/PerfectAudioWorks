@@ -67,6 +67,10 @@ void Main_PAW_widget::start_playback(const QString& filename) {
 
     StopPlayback();
 
+    if (m_audiothread->isPaused()) {
+        m_audiothread->setPlayPause();
+    }
+
     m_currentFile = filename;
     m_audiothread->setFile(m_currentFile);
 
@@ -201,11 +205,9 @@ void Main_PAW_widget::PlayPauseButton() {
     m_audiothread->setPlayPause();
     if (m_audiothread->isPaused()) {
         ui->PlayPause->setText("|>");
-        m_updateTimer->stop();
     }
     else {
         ui->PlayPause->setText("||");
-        m_updateTimer->start(100);
     }
 }
 

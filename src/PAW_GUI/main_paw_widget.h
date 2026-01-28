@@ -77,6 +77,7 @@ private:
     QString returnItemPath();
 
     bool finished_playing;
+    bool ToggleRepeatButton;
 
     Ui::Main_PAW_widget *ui; 
 };
