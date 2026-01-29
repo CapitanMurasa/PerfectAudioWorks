@@ -138,15 +138,17 @@ void Main_PAW_widget::updateAlbumArt()
 {
     if (m_originalAlbumArt.isNull()) {
         ui->AlbumArt->setPixmap(QPixmap());
-        ui->AlbumArt->setText("No Art");
+        ui->AlbumArt->hide();
         return;
     }
+    else {
+        ui->AlbumArt->show();
+        QPixmap scaledArt = m_originalAlbumArt.scaled(ui->AlbumArt->size(),
+            Qt::KeepAspectRatio,
+            Qt::SmoothTransformation);
 
-    QPixmap scaledArt = m_originalAlbumArt.scaled(ui->AlbumArt->size(),
-        Qt::KeepAspectRatio,
-        Qt::SmoothTransformation);
-
-    ui->AlbumArt->setPixmap(scaledArt);
+        ui->AlbumArt->setPixmap(scaledArt);
+    }
 }
 
 void Main_PAW_widget::resizeEvent(QResizeEvent* event)
@@ -190,6 +192,7 @@ void Main_PAW_widget::handlePlaybackFinished() {
     if (ToggleRepeatButton && !m_currentFile.isEmpty()) {
         start_playback(m_currentFile); 
     }
+  
 }
 
 void Main_PAW_widget::on_actionopen_file_triggered() {
