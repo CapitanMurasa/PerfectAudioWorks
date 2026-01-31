@@ -1,110 +1,158 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
-	<class>Settings_PAW_gui</class>
-	<widget class="QMainWindow" name="Settings_PAW_gui">
-		<property name="geometry">
-			<rect>
-				<x>0</x>
-				<y>0</y>
-				<width>500</width>
-				<height>400</height>
-			</rect>
-		</property>
-		<property name="windowTitle">
-			<string>PAW - Settings</string>
-		</property>
-		<widget class="QWidget" name="centralwidget">
-			<layout class="QVBoxLayout" name="mainVerticalLayout">
-				<item>
-					<layout class="QHBoxLayout" name="contentHorizontalLayout">
-						<item>
-							<widget class="QListWidget" name="settingsMenu">
-								<property name="maximumWidth">
-									<number>150</number>
-								</property>
-								<item>
-									<property name="text">
-										<string>Audio</string>
-									</property>
-								</item>
-								<item>
-									<property name="text">
-										<string>Interface</string>
-									</property>
-								</item>
-							</widget>
-						</item>
-						<item>
-							<widget class="QStackedWidget" name="settingsStack">
-								<property name="currentIndex">
-									<number>0</number>
-								</property>
-								<widget class="QWidget" name="audioPage">
-									<layout class="QVBoxLayout" name="audioLayout">
-										<item>
-											<widget class="QLabel" name="audioHeader">
-												<property name="font">
-													<font>
-														<pointsize>14</pointsize>
-														<bold>true</bold>
-													</font>
-												</property>
-												<property name="text">
-													<string>Audio Configuration</string>
-												</property>
-											</widget>
-										</item>
-										<item>
-											<layout class="QFormLayout" name="audioForm">
-												<item row="0" column="0">
-													<widget class="QLabel" name="deviceLabel">
-														<property name="text">
-															<string>Output Device:</string>
-														</property>
-													</widget>
-												</item>
-												<item row="0" column="1">
-													<widget class="QComboBox" name="audioDeviceComboBox"/>
-												</item>
-											</layout>
-										</item>
-										<item>
-											<spacer name="audioSpacer">
-												<property name="orientation">
-													<enum>Qt::Vertical</enum>
-												</property>
-											</spacer>
-										</item>
-									</layout>
-								</widget>
-								<widget class="QWidget" name="uiPage">
-									<layout class="QVBoxLayout" name="uiLayout">
-										<item>
-											<widget class="QLabel" name="uiPlaceholder">
-												<property name="text">
-													<string>Interface settings coming soon...</string>
-												</property>
-												<property name="alignment">
-													<set>Qt::AlignCenter</set>
-												</property>
-											</widget>
-										</item>
-									</layout>
-								</widget>
-							</widget>
-						</item>
-					</layout>
-				</item>
-				<item>
-					<widget class="QDialogButtonBox" name="buttonBox">
-						<property name="standardButtons">
-							<set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-						</property>
-					</widget>
-				</item>
-			</layout>
-		</widget>
-	</widget>
-	<resources/>
-	<connections/>
+ <class>Settings_PAW_gui</class>
+ <widget class="QMainWindow" name="Settings_PAW_gui">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>500</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>PAW - Settings</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="mainVerticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="contentHorizontalLayout">
+      <item>
+       <widget class="QListWidget" name="settingsMenu">
+        <item>
+         <property name="text">
+          <string>Audio</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Interface</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QStackedWidget" name="settingsStack">
+        <property name="currentIndex">
+         <number>1</number>
+        </property>
+        <widget class="QWidget" name="audioPage">
+         <layout class="QVBoxLayout" name="audioLayout">
+          <item>
+           <widget class="QLabel" name="audioHeader">
+            <property name="font">
+             <font>
+              <pointsize>14</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Audio Configuration</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QFormLayout" name="audioForm">
+            <item row="0" column="0">
+             <widget class="QLabel" name="deviceLabel">
+              <property name="text">
+               <string>Output Device:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="audioDeviceComboBox"/>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <spacer name="audioSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="uiPage">
+         <layout class="QVBoxLayout" name="uiLayout">
+          <item>
+           <widget class="QLabel" name="interfaceHeader">
+            <property name="font">
+             <font>
+              <pointsize>14</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Interface Configuration</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QFormLayout" name="InterfaceForm">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>Save playlists</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QCheckBox" name="SavePlaylistsCheck">
+              <property name="font">
+               <font>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="layoutDirection">
+               <enum>Qt::RightToLeft</enum>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QDialogButtonBox" name="buttonBox">
+      <property name="standardButtons">
+       <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
 </ui>

@@ -6,6 +6,7 @@
 #include <QComboBox> 
 
 #include "../AudioPharser/PortAudioHandler.h" 
+#include "../miscellaneous/json.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -20,6 +21,7 @@ class Settings_PAW_gui : public QMainWindow
 public:
     explicit Settings_PAW_gui(PortaudioThread* audioThread, QWidget* parent = nullptr);
     ~Settings_PAW_gui() override;
+    json settings;
 
 private slots:
     void applySettings();
@@ -28,6 +30,9 @@ private slots:
 private:
     Ui::Settings_PAW_gui* ui;
     PortaudioThread* m_audiothread;
+    JsonLoader loader;
+
+    void SetupJson();
 
 
 };

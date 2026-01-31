@@ -3,7 +3,7 @@ project(PerfectAudioWorks LANGUAGES CXX C)
 
 # --- Compiler Settings ---
 set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # --- Qt Setup ---
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
@@ -21,7 +21,7 @@ set(SOURCES
     src/AudioPharser/PortAudioHandler.cpp
     src/AudioPharser/CodecHandler.c
     src/AudioPharser/portaudio_backend.c
-    src/miscellaneous/file.cpp)
+    src/miscellaneous/file.cpp "src/miscellaneous/json.cpp")
 
 # --- This block handles both Linux/WSL and MinGW ---
 if(MINGW)
@@ -41,24 +41,28 @@ else()
     message(FATAL_ERROR "PortAudio not found. Install 'portaudio19-dev' or 'mingw-w64-ucrt-x86_64-portaudio'")
 endif()
 
-
 # --- TagLib (Internal Build) ---
 set(TAGLIB_DIR "${CMAKE_SOURCE_DIR}/extern/taglib")
 if(EXISTS ${TAGLIB_DIR}/CMakeLists.txt)
     message(STATUS "Using bundled TagLib from ${TAGLIB_DIR}")
-    
-
     add_subdirectory(${TAGLIB_DIR} EXCLUDE_FROM_ALL)
     include_directories(${TAGLIB_DIR}/taglib)
     set(TAGLIB_TARGET tag)
-
     if(WIN32 OR MINGW)
         target_compile_definitions(tag PRIVATE TAGLIB_WITH_WINDOWS_ENCODING)
     endif()
-
-    
 else()
     message(FATAL_ERROR "TagLib source not found. Clone it under extern/taglib.")
+endif()
+
+# --- JSON (nlohmann/json) ---
+set(JSON_DIR "${CMAKE_SOURCE_DIR}/extern/json")
+if(EXISTS ${JSON_DIR}/CMakeLists.txt)
+    message(STATUS "Using bundled nlohmann_json from ${JSON_DIR}")
+    set(JSON_BuildTests OFF CACHE INTERNAL "")
+    add_subdirectory(${JSON_DIR} EXCLUDE_FROM_ALL)
+else()
+    message(FATAL_ERROR "nlohmann_json source not found. Clone it under extern/json.")
 endif()
 
 # --- SndFile & MPG123 ---
@@ -105,6 +109,7 @@ target_link_libraries(PAW PRIVATE
     Qt6::Widgets
     ${PORTAUDIO_TARGET}
     ${TAGLIB_TARGET}
+    nlohmann_json::nlohmann_json  
 )
 
 if(SNDFILE_TARGET)
