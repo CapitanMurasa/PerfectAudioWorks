@@ -45,6 +45,18 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
 
+    if (loader.load_jsonfile(settings, "settings.json")) {
+        if (settings.contains("save_playlists")) {
+            bool value = settings["save_playlists"].get<bool>();
+            if (value == true) {
+                qDebug() << "Creating playlist.json...";
+                if (loader.load_jsonfile(playlist, "playlist.json")) {
+
+                }
+            }
+        }
+    }
+
     SetupUIElements();
     SetupQtActions();
 
@@ -204,6 +216,10 @@ void Main_PAW_widget::on_actionopen_file_triggered() {
 
 
 void Main_PAW_widget::onSliderValueChanged(float value) {
+    if (m_audiothread->isPaused()) {
+        m_audiothread->setPlayPause();
+        ui->PlayPause->setText("||");
+    }
     m_audiothread->SetFrameFromTimeline(value);
 }
 
@@ -232,6 +248,7 @@ void Main_PAW_widget::addFilesToPlaylist() {
         "",
         "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus);;All Files (*)"
     );
+    json j = json::array();
 
     for (const QString& file : files) {
         QString displayText;
@@ -241,9 +258,12 @@ void Main_PAW_widget::addFilesToPlaylist() {
 #ifdef _WIN32
         std::wstring w_filePath = file.toStdWString();
         metadata_result = get_metadata_w(w_filePath.c_str(), &filemetadata);
+        j.push_back(file.toStdString());
 #else
         QByteArray utf8_filePath = file.toUtf8();
         metadata_result = get_metadata(utf8_filePath.constData(), &filemetadata);
+        j.push_back(file.toStdString());
+    
 #endif
 
         if (metadata_result == 0) {
@@ -264,6 +284,8 @@ void Main_PAW_widget::addFilesToPlaylist() {
             displayText = QFileInfo(file).fileName();
         }
 
+        playlist["playlist"] = j;
+        loader.save_config(playlist, "playlist.json");
         QListWidgetItem* item = new QListWidgetItem(displayText);
         item->setData(Qt::UserRole, file);
         ui->Playlist->addItem(item);
@@ -358,7 +380,7 @@ void Main_PAW_widget::openSettings() {
 }
 
 void Main_PAW_widget::openAbout() {
-    about.show();
+    about->show();
 }
 
 void Main_PAW_widget::SetLoop() {

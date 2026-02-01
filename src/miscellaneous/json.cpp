@@ -24,7 +24,7 @@ bool JsonLoader::load_jsonfile(json& j, QString filename) {
     }
 }
 
-void JsonLoader::save_config(const json& j) {
+void JsonLoader::save_config(const json& j, QString filename) {
     std::ofstream file(fileName.toStdString());
     if (file.is_open()) {
         file << j.dump(4);

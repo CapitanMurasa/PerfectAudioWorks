@@ -74,6 +74,6 @@ void Settings_PAW_gui::applySettings() {
         settings["save_playlists"] = false;
     }
 
-    loader.save_config(settings);
+    loader.save_config(settings, "settings.json");
 }
 

@@ -13,7 +13,7 @@ class JsonLoader {
 public:
     bool load_jsonfile(json& j, QString filename);
 
-    void save_config(const json& j);
+    void save_config(const json& j, QString filename);
 
 private:
     QString fileName; 
