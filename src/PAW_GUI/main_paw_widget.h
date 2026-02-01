@@ -80,9 +80,12 @@ private:
     void SetupUIElements();
     void SetupQtActions();
     QString returnItemPath();
+    void ProcessFilesList(const QString& file);
+    void addFilesToPlaylistfromJson();
 
     bool finished_playing;
     bool ToggleRepeatButton = false;
+    bool saveplaylist;
 
     json settings;
     json playlist;

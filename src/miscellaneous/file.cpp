@@ -81,8 +81,6 @@ extern "C" {
 
         memset(info, 0, sizeof(FileInfo));
 
-        std::wcout << L"Engine Scanner: " << filename_w << std::endl;
-
         TagLib::FileName fn(filename_w);
 
         TagLib::FileRef fileRef(fn);

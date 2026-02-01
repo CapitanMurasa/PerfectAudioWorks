@@ -15,6 +15,10 @@ public:
 
     void save_config(const json& j, QString filename);
 
+    int FindItemInArray(json& j, std::string searchPath);
+
+    void RemoveItemByIndex(json& j, int index);
+
 private:
     QString fileName; 
 };
