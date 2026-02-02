@@ -101,7 +101,11 @@ list(APPEND SOURCES
 )
 
 # --- Executable Definition ---
+if(WIN32)
+add_executable(PAW WIN32 ${SOURCES})
+else()
 add_executable(PAW ${SOURCES})
+endif()
 
 # --- Linking ---
 target_link_libraries(PAW PRIVATE
