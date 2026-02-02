@@ -397,7 +397,7 @@ void Main_PAW_widget::openSettings() {
 }
 
 void Main_PAW_widget::openAbout() {
-    about->show();
+    about.show();
 }
 
 void Main_PAW_widget::SetLoop() {
