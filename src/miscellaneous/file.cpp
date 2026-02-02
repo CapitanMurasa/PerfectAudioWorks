@@ -78,29 +78,60 @@ extern "C" {
 #ifdef _WIN32
     int get_metadata_w(const wchar_t* filename_w, FileInfo* info) {
         if (!filename_w || !info) return 1;
-
         memset(info, 0, sizeof(FileInfo));
 
         TagLib::FileName fn(filename_w);
-
-        TagLib::FileRef fileRef(fn);
-
-        if (fileRef.isNull()) {
-            std::wcerr << L"TagLib: Critical Failure opening " << filename_w << std::endl;
-            return 1;
-        }
-
-
         const char* type = get_file_format_w(filename_w);
         strncpy(info->format, type, sizeof(info->format) - 1);
 
-        if (TagLib::Tag* tag = fileRef.tag()) {
-            copy_tstring_to_char(tag->title(), info->title, INFO_BUFFER_SIZE);
-            copy_tstring_to_char(tag->artist(), info->artist, INFO_BUFFER_SIZE);
-            copy_tstring_to_char(tag->album(), info->album, INFO_BUFFER_SIZE);
-            copy_tstring_to_char(tag->genre(), info->genre, INFO_BUFFER_SIZE);
+        TagLib::ByteVector imgData;
+
+        if (strcmp(type, "MP3") == 0) {
+            TagLib::MPEG::File mpegFile(fn);
+            if (!mpegFile.isValid()) return 1;
+
+            if (TagLib::Tag* tag = mpegFile.tag()) {
+                copy_tstring_to_char(tag->title(), info->title, INFO_BUFFER_SIZE);
+                copy_tstring_to_char(tag->artist(), info->artist, INFO_BUFFER_SIZE);
+            }
+
+            if (mpegFile.ID3v2Tag()) {
+                auto apicFrames = mpegFile.ID3v2Tag()->frameList("APIC");
+                if (!apicFrames.isEmpty()) {
+                    auto* frame = static_cast<TagLib::ID3v2::AttachedPictureFrame*>(apicFrames.front());
+                    for (auto* f : apicFrames) {
+                        auto* pf = static_cast<TagLib::ID3v2::AttachedPictureFrame*>(f);
+                        if (pf->type() == TagLib::ID3v2::AttachedPictureFrame::FrontCover) {
+                            frame = pf;
+                            break;
+                        }
+                    }
+                    imgData = frame->picture();
+                }
+            }
+        }
+        else if (strcmp(type, "FLAC") == 0) {
+            TagLib::FLAC::File flacFile(fn);
+            if (!flacFile.isValid()) return 1;
+
+            if (TagLib::Tag* tag = flacFile.tag()) {
+                copy_tstring_to_char(tag->title(), info->title, INFO_BUFFER_SIZE);
+                copy_tstring_to_char(tag->artist(), info->artist, INFO_BUFFER_SIZE);
+            }
+
+            auto picList = flacFile.pictureList();
+            if (!picList.isEmpty()) {
+                imgData = picList[0]->data(); 
+            }
         }
 
+        if (!imgData.isEmpty()) {
+            info->cover_size = imgData.size();
+            info->cover_image = (unsigned char*)malloc(info->cover_size);
+            if (info->cover_image) {
+                memcpy(info->cover_image, imgData.data(), info->cover_size);
+            }
+        }
 
         return 0;
     }
