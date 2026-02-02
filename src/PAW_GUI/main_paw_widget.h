@@ -72,7 +72,7 @@ private:
     FileInfo filemetadata;
     QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
-    About_PAW_gui *about;
+    About_PAW_gui about;
     JsonLoader loader;
 
     QString floatToMMSS(float totalSeconds);

@@ -59,7 +59,7 @@
       <item>
        <widget class="QLabel" name="versionLabel">
         <property name="text">
-         <string>0.0.5</string>
+         <string>0.0.6</string>
         </property>
        </widget>
       </item>
