@@ -14,13 +14,15 @@
 #include <taglib/flacfile.h>
 
 static void copy_tstring_to_char(const TagLib::String& tstr, char* dest, size_t dest_size) {
-    if (tstr.isEmpty() || dest_size == 0) {
-        if (dest_size > 0) dest[0] = '\0';
-        return;
+    if (dest_size == 0) return;
+
+    memset(dest, 0, dest_size);
+
+    if (!tstr.isEmpty()) {
+        std::string s = tstr.to8Bit(true);
+        size_t to_copy = (s.length() < dest_size) ? s.length() : dest_size - 1;
+        memcpy(dest, s.c_str(), to_copy);
     }
-    std::string s = tstr.to8Bit(true);
-    strncpy(dest, s.c_str(), dest_size - 1);
-    dest[dest_size - 1] = '\0';
 }
 
 #ifdef _WIN32
@@ -75,64 +77,51 @@ extern "C" {
 
 #ifdef _WIN32
     int get_metadata_w(const wchar_t* filename_w, FileInfo* info) {
+        if (!filename_w || !info) return 1;
         memset(info, 0, sizeof(FileInfo));
 
-        std::cout << filename_w << std::endl;
-
+        TagLib::FileName fn(filename_w);
         const char* type = get_file_format_w(filename_w);
         strncpy(info->format, type, sizeof(info->format) - 1);
-        info->format[sizeof(info->format) - 1] = '\0';
-
-        TagLib::FileRef fileRef(filename_w);
-
-        if (fileRef.isNull() || !fileRef.tag()) {
-            return 0;
-        }
-
-        TagLib::Tag* tag = fileRef.tag();
-
-        copy_tstring_to_char(tag->title(), info->title, INFO_BUFFER_SIZE);
-        copy_tstring_to_char(tag->artist(), info->artist, INFO_BUFFER_SIZE);
-        copy_tstring_to_char(tag->album(), info->album, INFO_BUFFER_SIZE);
-        copy_tstring_to_char(tag->genre(), info->genre, INFO_BUFFER_SIZE);
 
         TagLib::ByteVector imgData;
 
         if (strcmp(type, "MP3") == 0) {
-            TagLib::MPEG::File mpegFile(filename_w);
+            TagLib::MPEG::File mpegFile(fn);
+            if (!mpegFile.isValid()) return 1;
+
+            if (TagLib::Tag* tag = mpegFile.tag()) {
+                copy_tstring_to_char(tag->title(), info->title, INFO_BUFFER_SIZE);
+                copy_tstring_to_char(tag->artist(), info->artist, INFO_BUFFER_SIZE);
+            }
+
             if (mpegFile.ID3v2Tag()) {
-                TagLib::ID3v2::FrameList apicFrames = mpegFile.ID3v2Tag()->frameList("APIC");
+                auto apicFrames = mpegFile.ID3v2Tag()->frameList("APIC");
                 if (!apicFrames.isEmpty()) {
-                    TagLib::ID3v2::AttachedPictureFrame* bestFrame = nullptr;
-                    for (auto* frame : apicFrames) {
-                        auto* picFrame = static_cast<TagLib::ID3v2::AttachedPictureFrame*>(frame);
-                        if (picFrame->type() == TagLib::ID3v2::AttachedPictureFrame::FrontCover) {
-                            bestFrame = picFrame;
+                    auto* frame = static_cast<TagLib::ID3v2::AttachedPictureFrame*>(apicFrames.front());
+                    for (auto* f : apicFrames) {
+                        auto* pf = static_cast<TagLib::ID3v2::AttachedPictureFrame*>(f);
+                        if (pf->type() == TagLib::ID3v2::AttachedPictureFrame::FrontCover) {
+                            frame = pf;
                             break;
                         }
                     }
-                    if (!bestFrame) {
-                        bestFrame = static_cast<TagLib::ID3v2::AttachedPictureFrame*>(apicFrames.front());
-                    }
-                    imgData = bestFrame->picture();
+                    imgData = frame->picture();
                 }
             }
         }
         else if (strcmp(type, "FLAC") == 0) {
-            TagLib::FLAC::File flacFile(filename_w);
+            TagLib::FLAC::File flacFile(fn);
+            if (!flacFile.isValid()) return 1;
+
+            if (TagLib::Tag* tag = flacFile.tag()) {
+                copy_tstring_to_char(tag->title(), info->title, INFO_BUFFER_SIZE);
+                copy_tstring_to_char(tag->artist(), info->artist, INFO_BUFFER_SIZE);
+            }
+
             auto picList = flacFile.pictureList();
             if (!picList.isEmpty()) {
-                TagLib::FLAC::Picture* bestPic = nullptr;
-                for (auto* pic : picList) {
-                    if (pic->type() == TagLib::FLAC::Picture::FrontCover) {
-                        bestPic = pic;
-                        break;
-                    }
-                }
-                if (!bestPic) {
-                    bestPic = picList[0];
-                }
-                imgData = bestPic->data();
+                imgData = picList[0]->data(); 
             }
         }
 
@@ -141,9 +130,6 @@ extern "C" {
             info->cover_image = (unsigned char*)malloc(info->cover_size);
             if (info->cover_image) {
                 memcpy(info->cover_image, imgData.data(), info->cover_size);
-            }
-            else {
-                info->cover_size = 0;
             }
         }
 

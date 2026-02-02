@@ -4,3 +4,6 @@
 [submodule "extern/portaudio"]
 	path = extern/portaudio
 	url = https://github.com/PortAudio/portaudio
+[submodule "extern/json"]
+	path = extern/json
+	url = https://github.com/nlohmann/json.git

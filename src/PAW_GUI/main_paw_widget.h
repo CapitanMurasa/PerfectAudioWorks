@@ -11,6 +11,7 @@
 
 #include "../AudioPharser/PortAudioHandler.h" 
 #include "../miscellaneous/file.h" 
+#include "../miscellaneous/json.h" 
 
 #include "settings_paw_gui.h"
 #include "about_paw_gui.h"
@@ -33,6 +34,8 @@ public:
 
     void start_playback(const QString &filename);
 
+
+
     
     PortaudioThread& getAudioThread() { return *m_audiothread; }
 
@@ -51,6 +54,7 @@ private slots:
     void showPlaylistContextMenu(const QPoint &pos);
     void playSelectedItem();
     void deleteSelectedItem();
+    void SetLoop();
     
     void handlePlaybackProgress(int currentFrame, int totalFrames, int sampleRate);
     void handleTotalFileInfo(int totalFrames,int channels, int sampleRate, const char* codecname);
@@ -68,15 +72,23 @@ private:
     FileInfo filemetadata;
     QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
-    About_PAW_gui about;
+    About_PAW_gui *about;
+    JsonLoader loader;
 
     QString floatToMMSS(float totalSeconds);
     void updateAlbumArt();
     void SetupUIElements();
     void SetupQtActions();
     QString returnItemPath();
+    void ProcessFilesList(const QString& file);
+    void addFilesToPlaylistfromJson();
 
     bool finished_playing;
+    bool ToggleRepeatButton = false;
+    bool saveplaylist;
+
+    json settings;
+    json playlist;
 
     Ui::Main_PAW_widget *ui; 
 };
