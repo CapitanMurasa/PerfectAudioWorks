@@ -9,7 +9,7 @@ Currently, the player:
 
 * Uses **PortAudio** to initialize the audio output buffer.
 * Uses **Qt6** for rendering the UI.
-* Uses **Libtag** to pharse album art and metadata info (so far works on Linux)
+* Uses **Libtag** to pharse album art and metadata info
 
 ---
 
@@ -131,7 +131,6 @@ Run the player:
 3. ~~**Playing through mpg123 would result in white noise**~~
    ✅ Fixed: sample format conversion from int16 to float32 is now handled correctly.
 
-4. **Libtag on windows cannot find path to file** it seems libtag can't get file path on utf16
 ---
 
 ## License
