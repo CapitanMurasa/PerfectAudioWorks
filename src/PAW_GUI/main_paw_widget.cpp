@@ -206,6 +206,9 @@ void Main_PAW_widget::handlePlaybackFinished() {
     if (ToggleRepeatButton && !m_currentFile.isEmpty()) {
         start_playback(m_currentFile); 
     }
+    else {
+        PlayNextItem();
+    }
   
 }
 
