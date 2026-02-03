@@ -5,3 +5,4 @@ test
 /.vs
 /CMakeSettings.json
 .qtcreator
+deploy
