@@ -78,36 +78,60 @@ Main_PAW_widget::~Main_PAW_widget()
 }
 
 
-void Main_PAW_widget::start_playback(const QString& filename) {
-
-    StopPlayback();
-
-    if (m_audiothread->isPaused()) {
-        m_audiothread->setPlayPause();
-    }
-
+void Main_PAW_widget::start_playback(const QString &filename) {
     m_currentFile = filename;
-    m_audiothread->setFile(m_currentFile);
+
+    LoadMetadatafromfile();
+
+    if (m_audiothread->isRunning()) {
+        m_isSwitching = true;
+
+        disconnect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
+        connect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
 
 
+        m_audiothread->stop(); 
+    } else {
+
+        startPendingTrack();
+    }
+}
+
+void Main_PAW_widget::startPendingTrack() {
+    disconnect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
+
+    if (!m_currentFile.isEmpty()) {
+        m_audiothread->setFile(m_currentFile);
+        m_audiothread->start();
+
+        m_isSwitching = false;
+    }
+}
+
+void Main_PAW_widget::LoadMetadatafromfile(){
+    QString filename = m_currentFile;
+
+    FileInfo filemetadata = {0}; 
     int metadata_result = -1;
-#ifdef _WIN32
-    std::wstring w_filePath = filename.toStdWString();
-    metadata_result = get_metadata_w(w_filePath.c_str(), &filemetadata);
-#else
-    QByteArray utf8_filePath = filename.toUtf8();
-    metadata_result = get_metadata(utf8_filePath.constData(), &filemetadata);
-#endif
+
+    #ifdef _WIN32
+        std::wstring w_filePath = filename.toStdWString();
+        metadata_result = get_metadata_w(w_filePath.c_str(), &filemetadata);
+    #else
+        QByteArray utf8_filePath = filename.toUtf8();
+        metadata_result = get_metadata(utf8_filePath.constData(), &filemetadata);
+    #endif
 
 
     if (metadata_result == 0) {
         QPixmap coverArt;
         bool artFound = false;
 
-        QString title = filemetadata.title && strlen(filemetadata.title) > 0
+        QString title = (filemetadata.title && strlen(filemetadata.title) > 0)
             ? QString::fromUtf8(filemetadata.title)
-            : m_currentFile.section('/', -1);
-        QString artist = filemetadata.artist && strlen(filemetadata.artist) > 0
+            : filename.section('/', -1);
+            
+        QString artist = (filemetadata.artist && strlen(filemetadata.artist) > 0)
             ? QString::fromUtf8(filemetadata.artist)
             : "";
 
@@ -117,37 +141,20 @@ void Main_PAW_widget::start_playback(const QString& filename) {
             }
         }
 
+
         FileInfo_cleanup(&filemetadata);
 
-        if (artFound) {
-            m_originalAlbumArt = coverArt;
-        }
-        else {
-            m_originalAlbumArt = QPixmap();
-        }
-
-        updateAlbumArt();
-
+        m_originalAlbumArt = artFound ? coverArt : QPixmap();
         ui->Filename->setText(title);
         ui->Artist->setText(artist);
-    }
-    else {
-
-        ui->Filename->setText(m_currentFile.section('/', -1));
+    } else {
+        ui->Filename->setText(filename.section('/', -1));
         ui->Artist->setText("");
         m_originalAlbumArt = QPixmap();
-        updateAlbumArt();
     }
-
-    m_audiothread->start();
-    m_updateTimer->start(100);
-
-
-    ui->PlayPause->setText("||");
+    updateAlbumArt();
 
 }
-
-
 void Main_PAW_widget::updateAlbumArt()
 {
     if (m_originalAlbumArt.isNull()) {
@@ -203,6 +210,10 @@ void Main_PAW_widget::handleTotalFileInfo(int totalFrames, int channels, int sam
 void Main_PAW_widget::handlePlaybackFinished() {
     ui->TimelineSlider->setValue(0);
     ui->CurrentFileDuration->setText("00:00");
+
+    if (m_isSwitching) {
+        return;
+    }
 
     if (ToggleRepeatButton && !m_currentFile.isEmpty()) {
         QTimer::singleShot(0, this, [this](){
@@ -314,11 +325,20 @@ void Main_PAW_widget::ProcessFilesList(const QString& file) {
 void Main_PAW_widget::playSelectedItem() {
     QString filename = returnItemPath();
     if (filename.isEmpty()) return;
+    m_currentFile = filename;
+
+    LoadMetadatafromfile();
+
     if (m_audiothread->isRunning()) {
-        m_audiothread->stopPlayback();
-        m_audiothread->wait();
+        m_isSwitching = true; 
+        connect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack, Qt::UniqueConnection);
+        m_audiothread->stopPlayback(); 
+        
+
     }
-    start_playback(filename);
+    else {
+        startPendingTrack();
+    }
 }
 
 void Main_PAW_widget::PlayNextItem() {

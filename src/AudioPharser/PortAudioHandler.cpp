@@ -8,6 +8,7 @@ PortaudioThread::PortaudioThread(QObject* parent)
       m_isRunning(false),
       m_streamStartTime(0.0)
 {
+    m_stopRequested = false;
     audio_init();
     memset(&m_player, 0, sizeof(m_player));
 }
@@ -15,6 +16,11 @@ PortaudioThread::PortaudioThread(QObject* parent)
 PortaudioThread::~PortaudioThread() {
     stopPlayback();
     audio_terminate();
+}
+
+void PortaudioThread::stop()
+{
+    m_stopRequested = true; 
 }
 
 QList<QPair<QString, int>> PortaudioThread::GetAllAvailableOutputDevices() {
@@ -62,9 +68,13 @@ void PortaudioThread::StartPlayback() {
 }
 
 void PortaudioThread::run() {
+    m_stopRequested = false;
     StartPlayback();
 
     while (m_player.stream && Pa_IsStreamActive(m_player.stream) && m_isRunning) {
+        if (m_stopRequested) {
+            break; 
+        }
         if (!m_isPaused && m_player.codec) {
             double streamTime = Pa_GetStreamTime(m_player.stream) - m_streamStartTime;
             long frameFromTime = static_cast<long>(std::round(streamTime * m_player.samplerate));
