@@ -1,4 +1,5 @@
 #include "PortAudioHandler.h"
+#include "../miscellaneous/misc.h"
 #include <string>
 
 PortaudioThread::PortaudioThread(QObject* parent)
@@ -21,6 +22,10 @@ PortaudioThread::~PortaudioThread() {
 void PortaudioThread::stop()
 {
     m_stopRequested = true; 
+}
+
+void PortaudioThread::SetGain(float gain){
+    m_player.gain = clamp_float(gain, 0.0f, 1.0f);
 }
 
 QList<QPair<QString, int>> PortaudioThread::GetAllAvailableOutputDevices() {

@@ -1,5 +1,6 @@
 #include "portaudio_backend.h"
 #include "CodecHandler.h"
+#include "../miscellaneous/misc.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -43,28 +44,44 @@ int audio_callback_c(const void* input, void* output, unsigned long frameCount,
     float* out = (float*)output;
     if (!player || !player->codec) return paAbort;
 
-    int channels = player->channels;
 
     if (player->paused) {
-        memset(out, 0, frameCount * channels * sizeof(float));
+        memset(out, 0, frameCount * player->channels * sizeof(float));
         return paContinue;
     }
 
-    long readFrames = 0;
 
     pa_mutex_lock(&player->lock);
-    readFrames = codec_read_float(player->codec, out, frameCount);
+    long readFrames = codec_read_float(player->codec, out, frameCount);
     pa_mutex_unlock(&player->lock);
+
+
+    //player->gain = clamp_float(player->gain, 0.0f, 1.0f);
+    
+    float currentGain = player->lastGain;
+    float gainStep = (player->gain - player->lastGain) / (float)frameCount;
+
+
+    int totalSamples = readFrames * player->channels;
+    for (int i = 0; i < totalSamples; i++) {
+        if (i % player->channels == 0) {
+            currentGain += gainStep;
+        }
+        out[i] *= currentGain;
+    }
+    player->lastGain = player->gain;
+
 
     player->currentFrame += readFrames;
 
     if (readFrames < (long)frameCount) {
-        memset(out + readFrames * channels, 0,
-            (frameCount - readFrames) * channels * sizeof(float));
-
+        memset(out + (readFrames * player->channels), 0, 
+               (frameCount - readFrames) * player->channels * sizeof(float));
+        
         if (player->currentFrame >= player->totalFrames)
             return paComplete;
     }
+
     return paContinue;
 }
 
