@@ -80,6 +80,16 @@
         </spacer>
        </item>
        <item>
+        <widget class="QSlider" name="VolumeSlider">
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="Loop">
          <property name="text">
           <string>↺</string>
@@ -156,7 +166,7 @@
         </font>
        </property>
        <property name="text">
-        <string>filename</string>
+        <string>Welcome to PAW!</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>

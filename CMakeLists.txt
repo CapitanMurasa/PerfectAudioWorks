@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(PerfectAudioWorks LANGUAGES CXX C)
+project(PerfectAudioWorks VERSION 0.0.8 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -19,6 +19,41 @@ set(CMAKE_AUTOUIC ON)
 option(ENABLE_SNDFILE "Enable libsndfile support" ON)
 option(ENABLE_MPG123 "Enable mpg123 support" ON)
 
+# --- NSIS Windows installer generator --
+set(CPACK_PACKAGE_NAME "PerfectAudioWorks")
+set(CPACK_PACKAGE_VENDOR "CapitanMurasa")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Audio Player")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "PerfectAudioWorks")
+set(CPACK_NSIS_DISPLAY_NAME "PerfectAudioWorks")
+set(CPACK_NSIS_PACKAGE_NAME "PerfectAudioWorks")
+set(CPACK_NSIS_HELP_LINK "https://github.com/CapitanMurasa/PerfectAudioWorks")
+set(CPACK_NSIS_CREATE_ICONS_EXTRA "
+    CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'
+")
+
+set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+    CreateShortCut '$DESKTOP\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'
+")
+
+set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+    Delete '$DESKTOP\\\\PerfectAudioWorks.lnk'
+")
+
+# set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/resources/icon.ico")
+set(CPACK_NSIS_WELCOME_TITLE "Welcome to PerfectAudioWorks instalation wizard")
+
+
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/deploy/bin/"
+        DESTINATION bin
+        FILES_MATCHING PATTERN "*.dll")
+
+# Include the Qt plugins (platforms, styles, etc.)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/deploy/bin/platforms" DESTINATION bin)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/deploy/bin/styles" DESTINATION bin)
+
+set(CPACK_GENERATOR "NSIS")
+include(CPack)
+
 # --- Source Files ---
 set(SOURCES
     src/main.cpp
@@ -27,10 +62,7 @@ set(SOURCES
     src/AudioPharser/portaudio_backend.c
     src/miscellaneous/file.cpp 
     src/miscellaneous/json.cpp
-    src/PAW_GUI/about_paw_gui.cpp
-    src/PAW_GUI/settings_paw_gui.cpp
-    src/PAW_GUI/main_paw_widget.cpp
-)
+    src/miscellaneous/misc.c)
 
 # --- Platform Specifics ---
 if(MINGW)
@@ -87,12 +119,11 @@ endif()
 add_subdirectory(extern/taglib EXCLUDE_FROM_ALL)
 add_subdirectory(extern/json EXCLUDE_FROM_ALL)
 
-# --- Executable ---
+# --- Executable Definition ---
 if(WIN32)
-    # Adding WIN32 ensures it opens as a GUI app (no console)
-    add_executable(PAW WIN32 ${SOURCES})
+add_executable(PAW WIN32 ${SOURCES})
 else()
-    add_executable(PAW ${SOURCES})
+add_executable(PAW ${SOURCES})
 endif()
 
 # --- Linking ---
@@ -107,12 +138,24 @@ target_link_libraries(PAW PRIVATE
     ${EXTRA_LIBS}
 )
 
-# --- OS-Specific System Dependencies ---
-if(WIN32)
-    # shlwapi is required by mpg123; others are for PortAudio/Qt
-    target_link_libraries(PAW PRIVATE Ws2_32 winmm ole32 advapi32 setupapi shlwapi userenv mpr d3d11 dxgi dxguid d3d12 z)
-elseif(APPLE)
-    target_link_libraries(PAW PRIVATE "-framework CoreAudio -framework AudioToolbox -framework AudioUnit -framework CoreFoundation -framework Carbon")
-else()
-    target_link_libraries(PAW PRIVATE pthread m dl)
+if(SNDFILE_TARGET)
+    target_link_libraries(PAW PRIVATE ${SNDFILE_TARGET})
+endif()
+
+if(MPG123_TARGET)
+    target_link_libraries(PAW PRIVATE ${MPG123_TARGET})
+endif()
+
+include(GNUInstallDirs)
+
+install(TARGETS PAW
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    BUNDLE DESTINATION .
+)
+
+
+
+# --- Windows Specific ---
+if (WIN32)
+    target_link_libraries(PAW PRIVATE Ws2_32)
 endif()

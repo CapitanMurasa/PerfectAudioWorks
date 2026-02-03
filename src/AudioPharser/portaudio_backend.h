@@ -25,6 +25,8 @@ extern "C" {
         int samplerate;
         long totalFrames;
         long currentFrame;
+        float gain;
+        float lastGain;
         int paused;
         pa_mutex_t lock;
     } AudioPlayer;
