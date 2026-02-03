@@ -12,6 +12,8 @@ void Main_PAW_widget::SetupUIElements() {
     ui->Playlist->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(ui->TimelineSlider, &QSlider::valueChanged, this, &Main_PAW_widget::onSliderValueChanged);
+    connect(ui->VolumeSlider, &QSlider::valueChanged, this, &Main_PAW_widget::SetVolumeFromSlider);
+    ui->VolumeSlider->setValue(100);
     connect(ui->PlayPause, &QPushButton::clicked, this, &Main_PAW_widget::PlayPauseButton);
     connect(ui->Loop, &QPushButton::clicked, this, &Main_PAW_widget::SetLoop);
     connect(ui->actionSettings, &QAction::triggered, this, &Main_PAW_widget::openSettings);
@@ -427,6 +429,11 @@ void Main_PAW_widget::handleError(const QString& errorMessage) {
     QMessageBox::critical(this, "Audio Playback Error", errorMessage);
     m_audiothread->stopPlayback();
     handlePlaybackFinished();
+}
+
+void Main_PAW_widget::SetVolumeFromSlider(int value) {
+    float normalizedGain = static_cast<float>(value) / 100.0f;
+    m_audiothread->SetGain(normalizedGain);
 }
 
 void Main_PAW_widget::openSettings() {

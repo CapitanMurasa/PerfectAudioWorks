@@ -21,7 +21,9 @@ set(SOURCES
     src/AudioPharser/PortAudioHandler.cpp
     src/AudioPharser/CodecHandler.c
     src/AudioPharser/portaudio_backend.c
-    src/miscellaneous/file.cpp "src/miscellaneous/json.cpp")
+    src/miscellaneous/file.cpp 
+    src/miscellaneous/json.cpp
+    src/miscellaneous/misc.c)
 
 # --- This block handles both Linux/WSL and MinGW ---
 if(MINGW)

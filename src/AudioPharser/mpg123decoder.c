@@ -1,4 +1,5 @@
 #include "mpg123decoder.h"
+#include "../miscellaneous/misc.h"
 #include <string.h>
 #include <stdlib.h>
 #include <mpg123.h> 
@@ -22,11 +23,12 @@ MPG123Decoder* MPG123Decoder_open_w(const wchar_t* filename_w) {
         return NULL;
     }
 
-    // if (mpg123_open_w(dec->mh, filename_w) != MPG123_OK) {
-    //     mpg123_delete(dec->mh);
-    //     free(dec);
-    //     return NULL;
-    // }
+    char* utf8_path = wchar_to_char_alloc(filename_w);
+    if (utf8_path) {
+        int result = mpg123_open(dec->mh, utf8_path);
+        free(utf8_path);
+        if (result != MPG123_OK) return NULL;
+    }
 
     long rate;
     int channels, encoding;
