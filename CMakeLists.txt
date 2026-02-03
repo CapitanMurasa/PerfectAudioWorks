@@ -131,6 +131,8 @@ endif()
 list(APPEND SOURCES
     src/PAW_GUI/about_paw_gui.ui
     src/PAW_GUI/about_paw_gui.cpp
+    src/PAW_GUI/aboutfile_paw_gui.ui
+    src/PAW_GUI/aboutfile_paw_gui.cpp
     src/PAW_GUI/settings_paw_gui.ui
     src/PAW_GUI/settings_paw_gui.cpp
     src/PAW_GUI/main_paw_widget.ui

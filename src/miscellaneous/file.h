@@ -12,6 +12,11 @@ typedef struct {
     char album[INFO_BUFFER_SIZE];
     char genre[INFO_BUFFER_SIZE];
 
+    int sampleRate;
+    int channels;
+    int bitrate;
+    int length;
+
     unsigned char* cover_image;
     size_t cover_size;
 

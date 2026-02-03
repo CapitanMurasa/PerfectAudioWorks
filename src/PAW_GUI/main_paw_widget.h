@@ -15,6 +15,7 @@
 
 #include "settings_paw_gui.h"
 #include "about_paw_gui.h"
+#include "aboutfile_paw_gui.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -72,6 +73,7 @@ private:
     FileInfo filemetadata;
     QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
+    Aboutfile_PAW_gui *aboutfile;
     About_PAW_gui about;
     JsonLoader loader;
 
