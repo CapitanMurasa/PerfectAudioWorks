@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(PerfectAudioWorks LANGUAGES CXX C)
+project(PerfectAudioWorks VERSION 0.0.8 LANGUAGES CXX C)
 
 # --- Compiler Settings ---
 set(CMAKE_CXX_STANDARD 17)
@@ -14,6 +14,41 @@ set(CMAKE_AUTOUIC ON)
 # --- CMake Options for Decoders ---
 option(ENABLE_SNDFILE "Enable libsndfile support" ON)
 option(ENABLE_MPG123 "Enable mpg123 support" ON)
+
+# --- NSIS Windows installer generator --
+set(CPACK_PACKAGE_NAME "PerfectAudioWorks")
+set(CPACK_PACKAGE_VENDOR "CapitanMurasa")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Audio Player")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "PerfectAudioWorks")
+set(CPACK_NSIS_DISPLAY_NAME "PerfectAudioWorks")
+set(CPACK_NSIS_PACKAGE_NAME "PerfectAudioWorks")
+set(CPACK_NSIS_HELP_LINK "https://github.com/CapitanMurasa/PerfectAudioWorks")
+set(CPACK_NSIS_CREATE_ICONS_EXTRA "
+    CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'
+")
+
+set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+    CreateShortCut '$DESKTOP\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'
+")
+
+set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+    Delete '$DESKTOP\\\\PerfectAudioWorks.lnk'
+")
+
+# set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/resources/icon.ico")
+set(CPACK_NSIS_WELCOME_TITLE "Welcome to PerfectAudioWorks instalation wizard")
+
+
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/deploy/bin/"
+        DESTINATION bin
+        FILES_MATCHING PATTERN "*.dll")
+
+# Include the Qt plugins (platforms, styles, etc.)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/deploy/bin/platforms" DESTINATION bin)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/deploy/bin/styles" DESTINATION bin)
+
+set(CPACK_GENERATOR "NSIS")
+include(CPack)
 
 # --- Source Files ---
 set(SOURCES
@@ -125,6 +160,15 @@ endif()
 if(MPG123_TARGET)
     target_link_libraries(PAW PRIVATE ${MPG123_TARGET})
 endif()
+
+include(GNUInstallDirs)
+
+install(TARGETS PAW
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    BUNDLE DESTINATION .
+)
+
+
 
 # --- Windows Specific ---
 if (WIN32)
