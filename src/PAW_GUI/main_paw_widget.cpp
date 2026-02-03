@@ -203,10 +203,15 @@ void Main_PAW_widget::handleTotalFileInfo(int totalFrames, int channels, int sam
 void Main_PAW_widget::handlePlaybackFinished() {
     ui->TimelineSlider->setValue(0);
     ui->CurrentFileDuration->setText("00:00");
+
     if (ToggleRepeatButton && !m_currentFile.isEmpty()) {
-        start_playback(m_currentFile); 
+        QTimer::singleShot(0, this, [this](){
+            start_playback(m_currentFile);
+        });
     }
-  
+    else {
+        QTimer::singleShot(0, this, &Main_PAW_widget::PlayNextItem);
+    }
 }
 
 void Main_PAW_widget::on_actionopen_file_triggered() {
@@ -238,7 +243,11 @@ void Main_PAW_widget::PlayPauseButton() {
 
 void Main_PAW_widget::StopPlayback() {
     if (m_audiothread->isRunning()) {
+        bool oldState = m_audiothread->blockSignals(true);
+        
         m_audiothread->stopPlayback();
+        
+        m_audiothread->blockSignals(oldState);
     }
 }
 
@@ -397,7 +406,7 @@ void Main_PAW_widget::openSettings() {
 }
 
 void Main_PAW_widget::openAbout() {
-    about->show();
+    about.show();
 }
 
 void Main_PAW_widget::SetLoop() {

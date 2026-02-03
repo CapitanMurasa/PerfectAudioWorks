@@ -79,16 +79,17 @@ void PortaudioThread::run() {
     }
 
     emitProgress();
-    emit playbackFinished();
+    
+    audio_stop(&m_player); 
 
-    audio_stop(&m_player);
+    emit playbackFinished();
+    
     m_isRunning = false;
 }
 
 void PortaudioThread::stopPlayback() {
     m_isRunning = false;
     wait();
-    audio_stop(&m_player);
 }
 
 void PortaudioThread::setPlayPause() {
