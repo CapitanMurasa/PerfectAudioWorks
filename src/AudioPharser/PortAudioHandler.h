@@ -22,6 +22,7 @@ public:
     bool isPaused() const;
     void SetFrameFromTimeline(float percent);
     QList<QPair<QString, int>> GetAllAvailableOutputDevices();
+    void stop();
 
 signals:
     void errorOccurred(const QString&);
@@ -38,6 +39,7 @@ private:
     AudioPlayer m_player;
     bool m_isPaused;
     bool m_isRunning;
+    std::atomic<bool> m_stopRequested;
 
     // Time reference for PortAudio playback
     double m_streamStartTime;

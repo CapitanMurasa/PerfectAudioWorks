@@ -22,6 +22,7 @@ class Main_PAW_widget;
 }
 QT_END_NAMESPACE
 
+class Settings_PAW_gui;
 
 class Main_PAW_widget : public QMainWindow
 {
@@ -30,11 +31,9 @@ class Main_PAW_widget : public QMainWindow
 public:
     explicit Main_PAW_widget(QWidget *parent = nullptr); 
     ~Main_PAW_widget() override; 
-
-
     void start_playback(const QString &filename);
 
-
+    bool CanAutoSwitch = true;
 
     
     PortaudioThread& getAudioThread() { return *m_audiothread; }
@@ -78,13 +77,16 @@ private:
     QString floatToMMSS(float totalSeconds);
     void updateAlbumArt();
     void SetupUIElements();
+    void startPendingTrack();
     void SetupQtActions();
+    void LoadMetadatafromfile();
     QString returnItemPath();
     void ProcessFilesList(const QString& file);
     void addFilesToPlaylistfromJson();
 
     bool finished_playing;
     bool ToggleRepeatButton = false;
+    bool m_isSwitching = false;
     bool saveplaylist;
 
     json settings;

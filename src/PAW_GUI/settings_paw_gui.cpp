@@ -12,8 +12,10 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, QWidget* parent
     connect(ui->settingsMenu, &QListWidget::currentRowChanged,
         ui->settingsStack, &QStackedWidget::setCurrentIndex);
 
-    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &Settings_PAW_gui::applySettings);
+    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &Settings_PAW_gui::applySettingsandExit);
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &Settings_PAW_gui::close);
+
+    mainwidget = qobject_cast<Main_PAW_widget*>(parent);
 
     if (m_audiothread) {
         QList<QPair<QString, int>> availableDevices = m_audiothread->GetAllAvailableOutputDevices();
@@ -47,6 +49,13 @@ void Settings_PAW_gui::SetupJson() {
         ui->SavePlaylistsCheck->setChecked(settings["save_playlists"].get<bool>());
     }
 
+    if (settings.contains("auto_skip_tracks") && settings["auto_skip_tracks"].is_boolean()) {
+        ui->AutoSkipTracks->setChecked(settings["auto_skip_tracks"].get<bool>());
+    }
+    else{
+        settings["auto_skip_tracks"] = true;
+    }
+
 
     if (settings.contains("audio_device_index")) {
         int savedIdx = settings["audio_device_index"].get<int>();
@@ -74,6 +83,22 @@ void Settings_PAW_gui::applySettings() {
         settings["save_playlists"] = false;
     }
 
+    if (ui->AutoSkipTracks->isChecked()) {
+
+        settings["auto_skip_tracks"] = true;
+        mainwidget->CanAutoSwitch = true;
+    }
+    else {
+        settings["auto_skip_tracks"] = false;
+        mainwidget->CanAutoSwitch = false;
+    }
+
+
     loader.save_config(settings, "settings.json");
 }
 
+void Settings_PAW_gui::applySettingsandExit(){
+    applySettings();
+
+    this->close();
+}
