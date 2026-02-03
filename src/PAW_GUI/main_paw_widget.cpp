@@ -57,6 +57,14 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
                 }
             }
         }
+        if (settings.contains("auto_skip_tracks")){
+            if (settings["auto_skip_tracks"].get<bool>() == true){
+                CanAutoSwitch = true;
+            }
+            else {
+                CanAutoSwitch = false;
+            }
+        }
     }
 
     SetupUIElements();
@@ -221,7 +229,9 @@ void Main_PAW_widget::handlePlaybackFinished() {
         });
     }
     else {
-        QTimer::singleShot(0, this, &Main_PAW_widget::PlayNextItem);
+        if (CanAutoSwitch){
+            QTimer::singleShot(0, this, &Main_PAW_widget::PlayNextItem);
+        }
     }
 }
 
