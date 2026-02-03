@@ -84,6 +84,7 @@ private:
     QString returnItemPath();
     void ProcessFilesList(const QString& file);
     void addFilesToPlaylistfromJson();
+    void ClearUi();
 
     bool finished_playing;
     bool ToggleRepeatButton = false;

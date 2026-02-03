@@ -166,7 +166,7 @@
         </font>
        </property>
        <property name="text">
-        <string>filename</string>
+        <string>Welcome to PAW!</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>

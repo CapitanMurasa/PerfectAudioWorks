@@ -267,11 +267,22 @@ void Main_PAW_widget::PlayPauseButton() {
 void Main_PAW_widget::StopPlayback() {
     if (m_audiothread->isRunning()) {
         bool oldState = m_audiothread->blockSignals(true);
+
+        ClearUi();
         
         m_audiothread->stopPlayback();
         
         m_audiothread->blockSignals(oldState);
     }
+}
+
+void Main_PAW_widget::ClearUi(){
+    ui->TimelineSlider->setValue(0);
+    ui->CurrentFileDuration->setText("00:00");
+    ui->TotalFileDuration->setText("XX:XX");
+    ui->Filename->setText("");
+    ui->Artist->setText("");
+    ui->AlbumArt->hide();
 }
 
 
