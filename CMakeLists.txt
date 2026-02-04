@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(PerfectAudioWorks VERSION 0.0.8 LANGUAGES CXX C)
+project(PerfectAudioWorks VERSION 0.0.9 LANGUAGES CXX C)
 
 # --- Compiler Settings ---
 set(CMAKE_CXX_STANDARD 17)
@@ -131,6 +131,8 @@ endif()
 list(APPEND SOURCES
     src/PAW_GUI/about_paw_gui.ui
     src/PAW_GUI/about_paw_gui.cpp
+    src/PAW_GUI/aboutfile_paw_gui.ui
+    src/PAW_GUI/aboutfile_paw_gui.cpp
     src/PAW_GUI/settings_paw_gui.ui
     src/PAW_GUI/settings_paw_gui.cpp
     src/PAW_GUI/main_paw_widget.ui

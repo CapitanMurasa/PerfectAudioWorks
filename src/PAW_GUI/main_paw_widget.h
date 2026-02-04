@@ -15,6 +15,7 @@
 
 #include "settings_paw_gui.h"
 #include "about_paw_gui.h"
+#include "aboutfile_paw_gui.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -61,6 +62,7 @@ private slots:
     void handlePlaybackFinished();
     void handleError(const QString &errorMessage);
     void openSettings();
+    void on_actionAddFolder_triggered();
     void openAbout();
 
 private:
@@ -70,8 +72,10 @@ private:
     PortaudioThread* m_audiothread; 
     QString m_currentFile; 
     FileInfo filemetadata;
+    QListWidgetItem* currentItemPlaying;
     QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
+    Aboutfile_PAW_gui *aboutfile;
     About_PAW_gui about;
     JsonLoader loader;
 
@@ -85,6 +89,10 @@ private:
     void ProcessFilesList(const QString& file);
     void addFilesToPlaylistfromJson();
     void ClearUi();
+
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
+    void addFolderToPlaylist(const QString& folderPath);
 
     bool finished_playing;
     bool ToggleRepeatButton = false;
