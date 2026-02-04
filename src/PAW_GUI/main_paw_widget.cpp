@@ -1,6 +1,7 @@
 #include "main_paw_widget.h"
 #include "ui_main_paw_widget.h"
 #include "aboutfile_paw_gui.h"
+#include "Proxy_style.h"
 #include <cmath> 
 #include <string>
 #include <QMenu>        
@@ -11,6 +12,9 @@
 
 void Main_PAW_widget::SetupUIElements() {
     ui->Playlist->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    ui->TimelineSlider->setStyle(new JumpSliderStyle(ui->TimelineSlider->style()));
+    ui->VolumeSlider->setStyle(new JumpSliderStyle(ui->VolumeSlider->style()));
 
     connect(ui->TimelineSlider, &QSlider::valueChanged, this, &Main_PAW_widget::onSliderValueChanged);
     connect(ui->VolumeSlider, &QSlider::valueChanged, this, &Main_PAW_widget::SetVolumeFromSlider);
