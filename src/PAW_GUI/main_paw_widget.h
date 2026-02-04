@@ -62,6 +62,7 @@ private slots:
     void handlePlaybackFinished();
     void handleError(const QString &errorMessage);
     void openSettings();
+    void on_actionAddFolder_triggered();
     void openAbout();
 
 private:
@@ -88,6 +89,10 @@ private:
     void ProcessFilesList(const QString& file);
     void addFilesToPlaylistfromJson();
     void ClearUi();
+
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
+    void addFolderToPlaylist(const QString& folderPath);
 
     bool finished_playing;
     bool ToggleRepeatButton = false;

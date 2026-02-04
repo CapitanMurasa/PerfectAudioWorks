@@ -8,10 +8,17 @@
 #include <QAction>      
 #include <QMessageBox>  
 #include <QFileDialog>  
-#include <QFileInfo>    
+#include <QFileInfo>
+#include <QDirIterator>
+#include <QUrl>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
 
 void Main_PAW_widget::SetupUIElements() {
     ui->Playlist->setContextMenuPolicy(Qt::CustomContextMenu);
+    setAcceptDrops(true); 
+    ui->Playlist->setAcceptDrops(true);
 
     ui->TimelineSlider->setStyle(new JumpSliderStyle(ui->TimelineSlider->style()));
     ui->VolumeSlider->setStyle(new JumpSliderStyle(ui->VolumeSlider->style()));
@@ -24,6 +31,7 @@ void Main_PAW_widget::SetupUIElements() {
     connect(ui->actionSettings, &QAction::triggered, this, &Main_PAW_widget::openSettings);
     connect(ui->actionAbout, &QAction::triggered, this, &Main_PAW_widget::openAbout);
     connect(ui->actionadd_files_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addFilesToPlaylist);
+    connect(ui->actionadd_folders_to_playlist, &QAction::triggered, this, &Main_PAW_widget::on_actionAddFolder_triggered);
     connect(ui->Stop, &QPushButton::clicked, this, &Main_PAW_widget::StopPlayback);
     connect(ui->PreviousTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayPreviousItem);
     connect(ui->NextTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayNextItem);
@@ -93,6 +101,71 @@ Main_PAW_widget::~Main_PAW_widget()
         m_audiothread = nullptr;
     }
     delete ui;
+}
+
+void Main_PAW_widget::dragEnterEvent(QDragEnterEvent* event) {
+    if (event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    }
+}
+
+void Main_PAW_widget::dropEvent(QDropEvent* event) {
+    const QList<QUrl> urls = event->mimeData()->urls();
+
+    static const QStringList supportedFormats = { "mp3", "wav", "flac", "ogg", "opus" };
+
+    for (const QUrl& url : urls) {
+        QString filePath = url.toLocalFile();
+        if (filePath.isEmpty()) continue;
+
+        QFileInfo info(filePath);
+
+        if (info.isDir()) {
+            addFolderToPlaylist(filePath);
+        }
+        else {
+            QString extension = info.suffix().toLower();
+
+            if (supportedFormats.contains(extension)) {
+                ProcessFilesList(filePath);
+
+                if (saveplaylist) {
+                    std::string stdPath = filePath.toStdString();
+                    if (std::find(playlist.begin(), playlist.end(), stdPath) == playlist.end()) {
+                        playlist.push_back(stdPath);
+                    }
+                }
+            }
+        }
+    }
+
+    if (saveplaylist) {
+        loader.save_config(playlist, "playlist.json");
+    }
+}
+
+void Main_PAW_widget::addFolderToPlaylist(const QString& folderPath) {
+    QStringList filters;
+    filters << "*.mp3" << "*.wav" << "*.flac" << "*.ogg" << "*.opus";
+
+    QDirIterator it(folderPath, filters, QDir::Files, QDirIterator::Subdirectories);
+
+    while (it.hasNext()) {
+        QString filePath = it.next();
+
+        if (saveplaylist) {
+            std::string stdPath = filePath.toStdString();
+            if (std::find(playlist.begin(), playlist.end(), stdPath) == playlist.end()) {
+                playlist.push_back(stdPath);
+            }
+        }
+
+        ProcessFilesList(filePath);
+    }
+
+    if (saveplaylist) {
+        loader.save_config(playlist, "playlist.json");
+    }
 }
 
 
@@ -271,6 +344,16 @@ void Main_PAW_widget::on_actionopen_file_triggered() {
     QString filename = QFileDialog::getOpenFileName(this, "Open Audio File", "", "Audio Files (*.wav *.flac *.ogg *.opus *.mp3);;All Files (*)");
     if (!filename.isEmpty()) {
         start_playback(filename);
+    }
+}
+
+void Main_PAW_widget::on_actionAddFolder_triggered() {
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
+        "/home",
+        QFileDialog::ShowDirsOnly
+        | QFileDialog::DontResolveSymlinks);
+    if (!dir.isEmpty()) {
+        addFolderToPlaylist(dir);
     }
 }
 
