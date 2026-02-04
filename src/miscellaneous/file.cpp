@@ -33,6 +33,8 @@
 #define str_cmp_idx strcasecmp
 #endif
 
+bool CanItUseExternalAlbumart = false;
+
 static void copy_taglib_string(const TagLib::String& source, char* dest, size_t size) {
     if (source.isEmpty()) {
         dest[0] = '\0';
@@ -161,7 +163,7 @@ static int process_file_internal(TagLib::FileRef& f, FileInfo* info, const char*
     }
 
     extract_cover_art(f.file(), info, ext);
-    if (info->cover_image == nullptr) {
+    if (info->cover_image == nullptr && CanItUseExternalAlbumart == true) {
         get_albumart_fromfolder(info);
     }
 
@@ -216,4 +218,7 @@ void FileInfo_cleanup(FileInfo* info) {
     }
     info->cover_size = 0;
 }
-//2
+
+void setCanUseExternalAlbumart(bool value) {
+    CanItUseExternalAlbumart = value;
+}
