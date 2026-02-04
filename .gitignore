@@ -6,3 +6,4 @@ test
 /CMakeSettings.json
 .qtcreator
 deploy
+out
