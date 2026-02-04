@@ -216,3 +216,4 @@ void FileInfo_cleanup(FileInfo* info) {
     }
     info->cover_size = 0;
 }
+//2

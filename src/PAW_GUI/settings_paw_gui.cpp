@@ -78,6 +78,7 @@ void Settings_PAW_gui::applySettings() {
 
     if (ui->SavePlaylistsCheck->isChecked()) {
         settings["save_playlists"] = true;
+        // 1
     }
     else {
         settings["save_playlists"] = false;
