@@ -17,6 +17,13 @@ typedef struct {
     int bitrate;
     int length;
 
+
+#if _WIN32
+    const wchar_t* filename;
+#else
+    const char* filename;
+#endif
+
     unsigned char* cover_image;
     size_t cover_size;
 
@@ -27,11 +34,12 @@ extern "C" {
 #endif
 
     const char* get_file_format(const char* filename);
-    int get_metadata(const char* filename, FileInfo* info);
 
     #ifdef _WIN32
     #include <wchar.h>
     int get_metadata_w(const wchar_t* filename_w, FileInfo* info);
+    #else
+    int get_metadata(const char* filename, FileInfo* info);
     #endif
 
     void FileInfo_cleanup(FileInfo* info);

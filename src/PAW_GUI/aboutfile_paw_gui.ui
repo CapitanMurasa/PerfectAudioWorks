@@ -13,8 +13,9 @@
 		<property name="windowTitle">
 			<string>File Info</string>
 		</property>
+
 		<widget class="QWidget" name="centralwidget">
-			<layout class="QVBoxLayout" name="verticalLayout">
+			<layout class="QVBoxLayout" name="mainLayout">
 				<item>
 					<widget class="QLabel" name="headerLabel">
 						<property name="font">
@@ -33,19 +34,19 @@
 				</item>
 				<item>
 					<widget class="QScrollArea" name="scrollArea">
-						<property name="widgetResizable">
-							<bool>true</bool>
-						</property>
 						<property name="frameShape">
 							<enum>QFrame::NoFrame</enum>
+						</property>
+						<property name="widgetResizable">
+							<bool>true</bool>
 						</property>
 						<widget class="QWidget" name="scrollAreaWidgetContents">
 							<property name="geometry">
 								<rect>
 									<x>0</x>
 									<y>0</y>
-									<width>638</width>
-									<height>485</height>
+									<width>642</width>
+									<height>484</height>
 								</rect>
 							</property>
 							<layout class="QFormLayout" name="formLayout">
@@ -261,7 +262,7 @@
 											<string>Album Art:</string>
 										</property>
 										<property name="alignment">
-											<set>Qt::AlignTop|Qt::AlignLeft</set>
+											<set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
 										</property>
 									</widget>
 								</item>

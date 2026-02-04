@@ -47,6 +47,7 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     ui->setupUi(this);
 
     aboutfile = nullptr;
+    currentItemPlaying = nullptr; // Initialize to prevent crashes
 
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
@@ -90,23 +91,43 @@ Main_PAW_widget::~Main_PAW_widget()
     delete ui;
 }
 
-void Main_PAW_widget::start_playback(const QString& filename) {
+
+void Main_PAW_widget::start_playback(const QString & filename) {
     m_currentFile = filename;
+
+    currentItemPlaying = nullptr;
+
+    QFont normalFont = ui->Playlist->font();
+    QFont boldFont = normalFont;
+    boldFont.setBold(true);
+
+    for (int i = 0; i < ui->Playlist->count(); ++i) {
+        QListWidgetItem* item = ui->Playlist->item(i);
+
+        if (item->data(Qt::UserRole).toString() == filename) {
+            currentItemPlaying = item;
+
+            ui->Playlist->setCurrentItem(item);
+            item->setFont(boldFont); 
+        }
+        else {
+            item->setFont(normalFont);
+        }
+    }
 
     LoadMetadatafromfile();
 
     if (m_audiothread->isRunning()) {
         m_isSwitching = true;
-
         disconnect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
         connect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
-
         m_audiothread->stop();
     }
     else {
         startPendingTrack();
     }
 }
+
 
 void Main_PAW_widget::startPendingTrack() {
     disconnect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
@@ -149,6 +170,13 @@ void Main_PAW_widget::LoadMetadatafromfile() {
             if (coverArt.loadFromData(filemetadata.cover_image, filemetadata.cover_size)) {
                 artFound = true;
             }
+        }
+
+        if (filemetadata.bitrate > 0) {
+            ui->BitrateInfo->setText(QString::number(filemetadata.bitrate) + " kbps");
+        }
+        else {
+            ui->BitrateInfo->setText("");
         }
 
         FileInfo_cleanup(&filemetadata);
@@ -269,6 +297,8 @@ void Main_PAW_widget::StopPlayback() {
         m_audiothread->stopPlayback();
 
         m_audiothread->blockSignals(oldState);
+
+        currentItemPlaying = nullptr;
     }
 }
 
@@ -342,47 +372,41 @@ void Main_PAW_widget::ProcessFilesList(const QString& file) {
 void Main_PAW_widget::playSelectedItem() {
     QString filename = returnItemPath();
     if (filename.isEmpty()) return;
-    m_currentFile = filename;
 
-    LoadMetadatafromfile();
-
-    if (m_audiothread->isRunning()) {
-        m_isSwitching = true;
-        connect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack, Qt::UniqueConnection);
-        m_audiothread->stopPlayback();
-    }
-    else {
-        startPendingTrack();
-    }
+    start_playback(filename);
 }
 
 void Main_PAW_widget::PlayNextItem() {
-    QListWidgetItem* currentItem = ui->Playlist->currentItem();
-    if (!currentItem) return;
+    if (!currentItemPlaying) {
+        if (ui->Playlist->count() > 0) {
+            ui->Playlist->setCurrentRow(0);
+            playSelectedItem();
+        }
+        return;
+    }
 
-    int currentRow = ui->Playlist->row(currentItem);
+    int currentRow = ui->Playlist->row(currentItemPlaying);
     int nextRow = currentRow + 1;
+
     if (nextRow >= ui->Playlist->count()) return;
 
     QListWidgetItem* nextItem = ui->Playlist->item(nextRow);
     QString filename = nextItem->data(Qt::UserRole).toString();
 
-    ui->Playlist->setCurrentItem(nextItem);
     start_playback(filename);
 }
 
 void Main_PAW_widget::PlayPreviousItem() {
-    QListWidgetItem* currentItem = ui->Playlist->currentItem();
-    if (!currentItem) return;
+    if (!currentItemPlaying) return;
 
-    int currentRow = ui->Playlist->row(currentItem);
+    int currentRow = ui->Playlist->row(currentItemPlaying);
     int previousRow = currentRow - 1;
+
     if (previousRow < 0) return;
 
     QListWidgetItem* previousItem = ui->Playlist->item(previousRow);
     QString filename = previousItem->data(Qt::UserRole).toString();
 
-    ui->Playlist->setCurrentItem(previousItem);
     start_playback(filename);
 }
 
@@ -392,9 +416,16 @@ void Main_PAW_widget::deleteSelectedItem()
 
     if (currentRow >= 0)
     {
+
+        QListWidgetItem* itemToDelete = ui->Playlist->item(currentRow);
+        if (itemToDelete == currentItemPlaying) {
+            currentItemPlaying = nullptr;
+            StopPlayback(); 
+        }
+
+
         if (playlist.is_array() && currentRow < playlist.size()) {
             loader.RemoveItemByIndex(playlist, currentRow);
-
             loader.save_config(playlist, "playlist.json");
         }
 

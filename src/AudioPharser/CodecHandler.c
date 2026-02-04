@@ -23,7 +23,7 @@ CodecHandler* codec_open_w(const wchar_t* filename_w) {
     ch->type = CODEC_TYPE_NONE;
 
 #if defined(ENABLE_MPG123)
-    if (wcscmp(ext, L".mp3") == 0) {
+    if (_wcsicmp(ext, L".mp3") == 0) {
         MPG123Decoder* mp3 = MPG123Decoder_open_w(filename_w);
         if (mp3) {
             ch->type = CODEC_TYPE_MPG123;
@@ -43,7 +43,9 @@ CodecHandler* codec_open_w(const wchar_t* filename_w) {
 #endif
 
 #if !defined(ENABLE_SNDFILE) && !defined(ENABLE_MPG123)
-    printf("No codec had been chosen before compiling. Next time, choose at least one of them.\n");
+    printf("No codec had been chosen before compiling.\n");
+    free(ch);
+    return NULL;
 #else
     free(ch);
     return NULL;
@@ -78,12 +80,12 @@ CodecHandler* codec_open(const char* filename) {
         ch->decoder = sf;
         return ch;
     }
-    
 #endif
 
-
 #if !defined(ENABLE_SNDFILE) && !defined(ENABLE_MPG123)
-    printf("No codec had been chosen before compiling. Next time, choose at least one of them.\n");
+    printf("No codec had been chosen before compiling.\n");
+    free(ch);
+    return NULL;
 #else
     free(ch);
     return NULL;
@@ -131,9 +133,16 @@ long codec_read_float(CodecHandler* ch, float* buffer, int frames) {
 #if defined(ENABLE_MPG123)
     if (ch->type == CODEC_TYPE_MPG123) {
         int channels = MPG123Decoder_get_channels((MPG123Decoder*)ch->decoder);
-        int16_t tmp[frames * channels];
+        int16_t* tmp = (int16_t*)malloc(sizeof(int16_t) * frames * channels);
+        if (!tmp) return 0;
+
         long read_frames = MPG123Decoder_read_int16((MPG123Decoder*)ch->decoder, tmp, frames);
-        for (long i = 0; i < read_frames * channels; i++) buffer[i] = tmp[i] / 32768.0f;
+
+        for (long i = 0; i < read_frames * channels; i++) {
+            buffer[i] = tmp[i] / 32768.0f;
+        }
+
+        free(tmp);
         return read_frames;
     }
 #endif
@@ -175,14 +184,11 @@ void codec_close(CodecHandler* ch) {
 
 const char* codec_return_codec(CodecHandler* ch) {
     if (!ch) return "none";
-
 #if defined(ENABLE_SNDFILE)
     if (ch->type == CODEC_TYPE_SNDFILE) return "sndfile";
 #endif
-
 #if defined(ENABLE_MPG123)
     if (ch->type == CODEC_TYPE_MPG123) return "mpg123";
 #endif
-
-    return "unknown"; 
+    return "unknown";
 }

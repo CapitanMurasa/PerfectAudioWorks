@@ -71,6 +71,7 @@ private:
     PortaudioThread* m_audiothread; 
     QString m_currentFile; 
     FileInfo filemetadata;
+    QListWidgetItem* currentItemPlaying;
     QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
     Aboutfile_PAW_gui *aboutfile;

@@ -1,9 +1,12 @@
 #include "file.h"
+#include "misc.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
 #include <algorithm>
+#include <fstream>
+#include <filesystem>
 
 #include <taglib/taglib.h>
 #include <taglib/fileref.h>
@@ -96,6 +99,31 @@ static void extract_cover_art(TagLib::File* file, FileInfo* info, const char* ex
     }
 }
 
+static void get_albumart_fromfolder(FileInfo* info) {
+    std::vector<std::string> targets = { "folder.jpg", "cover.jpg", "album.jpg" };
+    std::filesystem::path songPath(info->filename);
+    std::filesystem::path parentDir = songPath.parent_path();
+
+    for (const auto& name : targets) {
+        std::filesystem::path fullPath = parentDir / name;
+        if (std::filesystem::exists(fullPath)) {
+            std::ifstream input(fullPath, std::ios::binary | std::ios::ate);
+            if (input) {
+                std::streamsize size = input.tellg();
+                input.seekg(0, std::ios::beg);
+
+                info->cover_size = static_cast<size_t>(size);
+                info->cover_image = (unsigned char*)malloc(info->cover_size);
+
+                if (info->cover_image) {
+                    input.read((char*)info->cover_image, size);
+                }
+                return;
+            }
+        }
+    }
+}
+
 static int process_file_internal(TagLib::FileRef& f, FileInfo* info, const char* ext) {
     if (f.isNull() || !f.file() || !f.file()->isValid()) {
         return 1;
@@ -128,11 +156,14 @@ static int process_file_internal(TagLib::FileRef& f, FileInfo* info, const char*
         copy_taglib_string(tag->genre(), info->genre, INFO_BUFFER_SIZE);
     }
     else {
-        info->title[0] = '\0'; info->artist[0] = '\0';
-        info->album[0] = '\0'; info->genre[0] = '\0';
+          info->title[0] = '\0'; info->artist[0] = '\0';
+          info->album[0] = '\0'; info->genre[0] = '\0';
     }
 
     extract_cover_art(f.file(), info, ext);
+    if (info->cover_image == nullptr) {
+        get_albumart_fromfolder(info);
+    }
 
     return 0;
 }
@@ -148,6 +179,8 @@ const char* get_file_format(const char* filename) {
 int get_metadata_w(const wchar_t* filename_w, FileInfo* info) {
     memset(info, 0, sizeof(FileInfo));
 
+    info->filename = filename_w;
+
     std::wstring fn(filename_w);
     size_t dotPos = fn.find_last_of(L".");
     std::string ext = "";
@@ -160,10 +193,12 @@ int get_metadata_w(const wchar_t* filename_w, FileInfo* info) {
     return process_file_internal(f, info, ext.c_str());
 }
 
-#endif
-
+#else
 int get_metadata(const char* filename, FileInfo* info) {
     memset(info, 0, sizeof(FileInfo));
+
+
+    info->filename == filename;
 
     std::string fn(filename);
     size_t dotPos = fn.find_last_of(".");
@@ -172,6 +207,7 @@ int get_metadata(const char* filename, FileInfo* info) {
     TagLib::FileRef f(filename);
     return process_file_internal(f, info, ext.c_str());
 }
+#endif
 
 void FileInfo_cleanup(FileInfo* info) {
     if (info->cover_image) {
