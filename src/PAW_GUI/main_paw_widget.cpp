@@ -59,36 +59,36 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     ui->setupUi(this);
 
     aboutfile = nullptr;
-    currentItemPlaying = nullptr; // Initialize to prevent crashes
+    currentItemPlaying = nullptr;
 
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
 
-    if (loader.load_jsonfile(settings, "settings.json")) {
-        if (settings.contains("save_playlists")) {
-            saveplaylist = settings["save_playlists"].get<bool>();
-            if (saveplaylist == true) {
-                if (loader.load_jsonfile(playlist, "playlist.json")) {
-                    addFilesToPlaylistfromJson();
-                }
-                else {
-                    playlist = json::array();
-                }
-            }
+    if (!loader.load_jsonfile(settings, "settings.json")) {
+        settings = nlohmann::json::object();
+        settings["save_playlists"] = true;
+        settings["auto_skip_tracks"] = true;
+        qDebug() << "Settings not found, using defaults.";
+    }
+
+    saveplaylist = settings.value("save_playlists", true);
+    CanAutoSwitch = settings.value("auto_skip_tracks", true);
+
+    if (saveplaylist) {
+        if (!loader.load_jsonfile(playlist, "playlist.json")) {
+            playlist = nlohmann::json::array();
+            qDebug() << "Playlist file missing, initialized empty array.";
         }
-        if (settings.contains("auto_skip_tracks")) {
-            if (settings["auto_skip_tracks"].get<bool>() == true) {
-                CanAutoSwitch = true;
-            }
-            else {
-                CanAutoSwitch = false;
-            }
+        else {
+            addFilesToPlaylistfromJson();
         }
+    }
+    else {
+        playlist = nlohmann::json::array();
     }
 
     SetupUIElements();
     SetupQtActions();
-
     m_updateTimer = new QTimer(this);
 }
 
