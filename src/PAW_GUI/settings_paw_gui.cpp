@@ -1,5 +1,6 @@
 #include "settings_paw_gui.h"
 #include "ui_settings_paw_gui.h"
+#include "../AudioPharser/PortAudioHandler.h"
 #include <QPushButton>
 
 Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, QWidget* parent)
@@ -65,10 +66,13 @@ void Settings_PAW_gui::SetupJson() {
 
         if (uiIdx != -1) {
             ui->audioDeviceComboBox->setCurrentIndex(uiIdx);
-
-            if (m_audiothread) {
-                m_audiothread->setAudioDevice(savedIdx);
+            if (m_audiothread->isRunning()) {
+                m_audiothread->changeAudioDevice(savedIdx);
             }
+            else {
+                m_audiothread->setAudioDevice(savedIdx); 
+            }
+
         }
     }
 }
@@ -76,7 +80,7 @@ void Settings_PAW_gui::SetupJson() {
 void Settings_PAW_gui::applySettings() {
     if (m_audiothread) {
         int selectedPaDeviceIndex = ui->audioDeviceComboBox->currentData().toInt();
-        m_audiothread->setAudioDevice(selectedPaDeviceIndex);
+        m_audiothread->changeAudioDevice(selectedPaDeviceIndex);
         settings["audio_device_index"] = selectedPaDeviceIndex;
     }
 

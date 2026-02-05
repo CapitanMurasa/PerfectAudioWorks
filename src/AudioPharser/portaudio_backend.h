@@ -29,21 +29,28 @@ extern "C" {
         float lastGain;
         int paused;
         pa_mutex_t lock;
+        const char* filename;
     } AudioPlayer;
 
     int audio_init();
     int audio_terminate();
 
-    int audio_play(AudioPlayer* player, const char* filename, int device);
-
     #ifdef _WIN32
     #include <wchar.h>
     int audio_play_w(AudioPlayer* player, const wchar_t* filename_w, int device);
+    #else
+    int audio_play(AudioPlayer* player, const char* filename, int device);
     #endif
 
     int audio_stop(AudioPlayer* player);
     int audio_pause(AudioPlayer* player, int pause);
     int audio_seek(AudioPlayer* player, int64_t frame);
+    int device_hotswap(AudioPlayer* player, int device);
+
+    void pa_mutex_init(pa_mutex_t* lock);
+    void pa_mutex_lock(pa_mutex_t* lock);
+    void pa_mutex_unlock(pa_mutex_t* lock);
+    void pa_mutex_destroy(pa_mutex_t* lock);
 
     int audio_callback_c(const void* input, void* output, unsigned long frameCount,
         const PaStreamCallbackTimeInfo* timeInfo,
