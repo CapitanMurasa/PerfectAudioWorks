@@ -14,8 +14,10 @@ set(CMAKE_AUTOUIC ON)
 # --- CMake Options for Decoders ---
 option(ENABLE_SNDFILE "Enable libsndfile support" ON)
 option(ENABLE_MPG123 "Enable mpg123 support" ON)
+option(ENABLE_FAAD    "Enable FAAD2 (AAC/M4A) support" ON) # <--- NEW OPTION
 
 # --- Source Files ---
+# Note: Listing .h files here ensures they are handled by AUTOMOC and appear in IDEs
 set(SOURCES
     src/main.cpp
     src/AudioPharser/PortAudioHandler.cpp
@@ -113,6 +115,47 @@ if(ENABLE_MPG123)
         target_include_directories(PAW PRIVATE ${MPG123_INCLUDE_DIR})
         target_sources(PAW PRIVATE src/AudioPharser/mpg123decoder.c)
         target_link_libraries(PAW PRIVATE ${MPG123_LIB})
+    endif()
+endif()
+
+if(ENABLE_FAAD)
+    set(FAAD_DIR "${CMAKE_SOURCE_DIR}/extern/faad2")
+    
+    if(EXISTS "${FAAD_DIR}/CMakeLists.txt")
+        message(STATUS "Building FAAD2 and mp4ff from submodule")
+
+
+        add_library(mp4ff STATIC
+            ${FAAD_DIR}/common/mp4ff/mp4ff.c
+            ${FAAD_DIR}/common/mp4ff/mp4ff_int_types.h
+            ${FAAD_DIR}/common/mp4ff/mp4ff.h
+        )
+        target_include_directories(mp4ff PUBLIC ${FAAD_DIR}/common/mp4ff)
+
+        set(FAAD_BUILD_BINARIES OFF CACHE INTERNAL "")
+        set(FAAD_BUILD_SHARED_LIBS OFF CACHE INTERNAL "") 
+        
+        add_subdirectory(${FAAD_DIR} EXCLUDE_FROM_ALL)
+        
+
+        if(TARGET libfaad)
+            set(FAAD_TARGET libfaad)
+        elseif(TARGET faad)
+            set(FAAD_TARGET faad)
+        else()
+            message(FATAL_ERROR "Could not find faad target in submodule")
+        endif()
+        
+        target_compile_definitions(PAW PRIVATE ENABLE_FAAD)
+        
+        target_sources(PAW PRIVATE src/AudioPharser/faaddecoder.c)
+        
+        target_link_libraries(PAW PRIVATE ${FAAD_TARGET} mp4ff)
+        
+        target_include_directories(PAW PRIVATE ${FAAD_DIR}/include)
+
+    else()
+        message(WARNING "FAAD2 submodule not found at ${FAAD_DIR}. Run: git submodule update --init")
     endif()
 endif()
 

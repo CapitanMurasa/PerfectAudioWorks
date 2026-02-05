@@ -3,6 +3,9 @@
 
 #include "libsndfiledecoder.h"
 #include "mpg123decoder.h"
+#ifdef ENABLE_FAAD
+#include "faaddecoder.h"
+#endif
 #include "../miscellaneous/file.h"
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +14,8 @@
 typedef enum {
     CODEC_TYPE_NONE = 0,
     CODEC_TYPE_SNDFILE,
-    CODEC_TYPE_MPG123
+    CODEC_TYPE_MPG123,
+    CODEC_TYPE_FAAD
 } CodecType;
 
 typedef struct CodecHandler CodecHandler;

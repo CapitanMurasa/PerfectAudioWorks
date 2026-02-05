@@ -3,6 +3,12 @@
 #include <string.h>
 #include <stdio.h>
 
+#if defined(ENABLE_FAAD)
+#include "faaddecoder.h"
+#endif
+
+
+
 struct CodecHandler {
     CodecType type;
     void* decoder;
@@ -33,6 +39,17 @@ CodecHandler* codec_open_w(const wchar_t* filename_w) {
     }
 #endif
 
+#if defined(ENABLE_FAAD)
+    if (_wcsicmp(ext, L".m4a") == 0 || _wcsicmp(ext, L".aac") == 0 || _wcsicmp(ext, L".mp4") == 0) {
+        FaadDecoder* faad = faad_open_w(filename_w);
+        if (faad) {
+            ch->type = CODEC_TYPE_FAAD;
+            ch->decoder = faad;
+            return ch;
+        }
+    }
+#endif
+
 #if defined(ENABLE_SNDFILE)
     SndFileDecoder* sf = sndfile_open_w(filename_w);
     if (sf) {
@@ -42,19 +59,18 @@ CodecHandler* codec_open_w(const wchar_t* filename_w) {
     }
 #endif
 
-#if !defined(ENABLE_SNDFILE) && !defined(ENABLE_MPG123)
+#if !defined(ENABLE_SNDFILE) && !defined(ENABLE_MPG123) && !defined(ENABLE_FAAD)
     printf("No codec had been chosen before compiling.\n");
-    free(ch);
-    return NULL;
-#else
-    free(ch);
-    return NULL;
 #endif
+
+    free(ch);
+    return NULL;
 }
 #endif
 
 CodecHandler* codec_open(const char* filename) {
     if (!filename) return NULL;
+
     const char* filetype = get_file_format(filename);
 
     CodecHandler* ch = (CodecHandler*)malloc(sizeof(CodecHandler));
@@ -73,6 +89,21 @@ CodecHandler* codec_open(const char* filename) {
     }
 #endif
 
+#if defined(ENABLE_FAAD)
+
+    const char* dot = strrchr(filename, '.');
+    if (dot) {
+        if (_stricmp(dot, ".m4a") == 0 || _stricmp(dot, ".aac") == 0 || _stricmp(dot, ".mp4") == 0) {
+            FaadDecoder* faad = faad_open(filename);
+            if (faad) {
+                ch->type = CODEC_TYPE_FAAD;
+                ch->decoder = faad;
+                return ch;
+            }
+        }
+    }
+#endif
+
 #if defined(ENABLE_SNDFILE)
     SndFileDecoder* sf = sndfile_open(filename);
     if (sf) {
@@ -82,14 +113,12 @@ CodecHandler* codec_open(const char* filename) {
     }
 #endif
 
-#if !defined(ENABLE_SNDFILE) && !defined(ENABLE_MPG123)
+#if !defined(ENABLE_SNDFILE) && !defined(ENABLE_MPG123) && !defined(ENABLE_FAAD)
     printf("No codec had been chosen before compiling.\n");
-    free(ch);
-    return NULL;
-#else
-    free(ch);
-    return NULL;
 #endif
+
+    free(ch);
+    return NULL;
 }
 
 int codec_get_channels(CodecHandler* ch) {
@@ -99,6 +128,9 @@ int codec_get_channels(CodecHandler* ch) {
 #endif
 #if defined(ENABLE_MPG123)
     if (ch->type == CODEC_TYPE_MPG123) return MPG123Decoder_get_channels((MPG123Decoder*)ch->decoder);
+#endif
+#if defined(ENABLE_FAAD)
+    if (ch->type == CODEC_TYPE_FAAD) return faad_get_channels((FaadDecoder*)ch->decoder);
 #endif
     return 0;
 }
@@ -111,6 +143,9 @@ long codec_get_total_frames(CodecHandler* ch) {
 #if defined(ENABLE_MPG123)
     if (ch->type == CODEC_TYPE_MPG123) return MPG123Decoder_get_total_frames((MPG123Decoder*)ch->decoder);
 #endif
+#if defined(ENABLE_FAAD)
+    if (ch->type == CODEC_TYPE_FAAD) return faad_get_total_frames((FaadDecoder*)ch->decoder);
+#endif
     return 0;
 }
 
@@ -121,6 +156,9 @@ int codec_get_samplerate(CodecHandler* ch) {
 #endif
 #if defined(ENABLE_MPG123)
     if (ch->type == CODEC_TYPE_MPG123) return MPG123Decoder_get_samplerate((MPG123Decoder*)ch->decoder);
+#endif
+#if defined(ENABLE_FAAD)
+    if (ch->type == CODEC_TYPE_FAAD) return faad_get_samplerate((FaadDecoder*)ch->decoder);
 #endif
     return 0;
 }
@@ -146,6 +184,9 @@ long codec_read_float(CodecHandler* ch, float* buffer, int frames) {
         return read_frames;
     }
 #endif
+#if defined(ENABLE_FAAD)
+    if (ch->type == CODEC_TYPE_FAAD) return faad_read_float((FaadDecoder*)ch->decoder, buffer, frames);
+#endif
     return 0;
 }
 
@@ -156,6 +197,9 @@ long codec_seek(CodecHandler* ch, long frame) {
 #endif
 #if defined(ENABLE_MPG123)
     if (ch->type == CODEC_TYPE_MPG123) return MPG123Decoder_seek((MPG123Decoder*)ch->decoder, frame);
+#endif
+#if defined(ENABLE_FAAD)
+    if (ch->type == CODEC_TYPE_FAAD) return faad_seek((FaadDecoder*)ch->decoder, frame);
 #endif
     return -1;
 }
@@ -168,6 +212,9 @@ long codec_get_current_frame(CodecHandler* ch) {
 #if defined(ENABLE_MPG123)
     if (ch->type == CODEC_TYPE_MPG123) return MPG123Decoder_get_current_frame((MPG123Decoder*)ch->decoder);
 #endif
+#if defined(ENABLE_FAAD)
+    if (ch->type == CODEC_TYPE_FAAD) return faad_get_current_frame((FaadDecoder*)ch->decoder);
+#endif
     return -1;
 }
 
@@ -179,6 +226,9 @@ void codec_close(CodecHandler* ch) {
 #if defined(ENABLE_MPG123)
     if (ch->type == CODEC_TYPE_MPG123) MPG123Decoder_close((MPG123Decoder*)ch->decoder);
 #endif
+#if defined(ENABLE_FAAD)
+    if (ch->type == CODEC_TYPE_FAAD) faad_close((FaadDecoder*)ch->decoder);
+#endif
     free(ch);
 }
 
@@ -189,6 +239,9 @@ const char* codec_return_codec(CodecHandler* ch) {
 #endif
 #if defined(ENABLE_MPG123)
     if (ch->type == CODEC_TYPE_MPG123) return "mpg123";
+#endif
+#if defined(ENABLE_FAAD)
+    if (ch->type == CODEC_TYPE_FAAD) return "faad";
 #endif
     return "unknown";
 }

@@ -1,9 +1,9 @@
 [submodule "extern/taglib"]
 	path = extern/taglib
 	url = https://github.com/taglib/taglib
-[submodule "extern/portaudio"]
-	path = extern/portaudio
-	url = https://github.com/PortAudio/portaudio
 [submodule "extern/json"]
 	path = extern/json
 	url = https://github.com/nlohmann/json.git
+[submodule "extern/faad2"]
+	path = extern/faad2
+	url = https://github.com/ralph-irving/faad2.git
