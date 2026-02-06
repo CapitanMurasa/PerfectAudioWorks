@@ -2,6 +2,11 @@
 #include "../miscellaneous/misc.h"
 #include <stdio.h>
 
+#ifndef _WIN32
+#include <strings.h>      
+#define _stricmp strcasecmp 
+#endif
+
 struct CodecHandler {
     CodecType type;
     void* decoder;

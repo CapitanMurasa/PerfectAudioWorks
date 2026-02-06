@@ -20,6 +20,8 @@ option(ENABLE_MPG123 "Enable mpg123 support" ON)
 # --- Source Files ---
 set(SOURCES
     src/main.cpp
+    src/assets/resources.rc
+    src/assets.qrc
     src/AudioPharser/PortAudioHandler.cpp
     src/AudioPharser/CodecHandler.c
     src/AudioPharser/portaudio_backend.c
@@ -202,8 +204,18 @@ if(WIN32)
 endif()
 
 if(UNIX AND NOT APPLE)
+    # 1. Install the Desktop File
     install(FILES "${CMAKE_SOURCE_DIR}/paw.desktop" DESTINATION share/applications)
-    install(FILES "${CMAKE_SOURCE_DIR}/src/assets/paw.png" DESTINATION share/icons/hicolor/256x256/apps)
+
+    # 2. Install the 64x64 Icon
+    install(FILES "${CMAKE_SOURCE_DIR}/src/assets/icon_64.png" 
+            DESTINATION share/icons/hicolor/64x64/apps 
+            RENAME paw.png)
+
+    # 3. Install the 256x256 Icon
+    install(FILES "${CMAKE_SOURCE_DIR}/src/assets/icon_256.png" 
+            DESTINATION share/icons/hicolor/256x256/apps 
+            RENAME paw.png)
 endif()
 
 # --- NSIS Installer ---

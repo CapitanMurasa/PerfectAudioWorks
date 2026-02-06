@@ -1,6 +1,7 @@
 
 #include "PAW_GUI/main_paw_widget.h"
 #include <QApplication>
+#include <QIcon>
 #include <QDebug>
 
 int main(int argc, char* argv[]) {
@@ -8,6 +9,12 @@ int main(int argc, char* argv[]) {
     setlocale(LC_ALL, ".UTF-8");
 
     QApplication a(argc, argv);
+
+    QIcon appIcon;
+    appIcon.addFile(":/assets/icon_64.png");
+    appIcon.addFile(":/assets/icon_256.png");
+
+    a.setWindowIcon(appIcon);
 
     PaError err = Pa_Initialize();
     if (err != paNoError) {
