@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(PerfectAudioWorks VERSION 0.0.9 LANGUAGES CXX C)
+project(PerfectAudioWorks VERSION 0.1.0 LANGUAGES CXX C)
 
 # --- Compiler Settings ---
 set(CMAKE_CXX_STANDARD 17)
@@ -67,18 +67,63 @@ else()
     message(FATAL_ERROR "PortAudio not found.")
 endif()
 
-# 2. FFmpeg (The Master Decoder)
+# --- FFmpeg (Custom Minimal Build) ---
 if(ENABLE_FFMPEG)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswresample)
+    message(STATUS "Configuring Custom FFmpeg...")
     
+    get_filename_component(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/extern/ffmpeg_minimal" ABSOLUTE)
+    
+    
+    add_library(FFmpeg::avcodec SHARED IMPORTED)
+    set_target_properties(FFmpeg::avcodec PROPERTIES
+        IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/avcodec.lib"        
+        IMPORTED_LOCATION "${FFMPEG_ROOT}/bin/avcodec-62.dll"  
+        INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
+    )
+    
+    add_library(FFmpeg::avformat SHARED IMPORTED)
+    set_target_properties(FFmpeg::avformat PROPERTIES
+        IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/avformat.lib"
+        IMPORTED_LOCATION "${FFMPEG_ROOT}/bin/avformat-62.dll"  
+        INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
+    )
+
+    add_library(FFmpeg::avutil SHARED IMPORTED)
+    set_target_properties(FFmpeg::avutil PROPERTIES
+        IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/avutil.lib"
+        IMPORTED_LOCATION "${FFMPEG_ROOT}/bin/avutil-60.dll"    
+        INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
+    )
+    
+    add_library(FFmpeg::swresample SHARED IMPORTED)
+    set_target_properties(FFmpeg::swresample PROPERTIES
+        IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/swresample.lib"
+        IMPORTED_LOCATION "${FFMPEG_ROOT}/bin/swresample-6.dll" 
+        INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
+    )
+    
+
     target_compile_definitions(PAW PRIVATE ENABLE_FFMPEG)
     target_sources(PAW PRIVATE src/AudioPharser/ffmpegdecoder.c)
-    target_link_libraries(PAW PRIVATE PkgConfig::FFMPEG)
-    message(STATUS "FFmpeg Support: ENABLED")
+    
+    target_link_libraries(PAW PRIVATE 
+        FFmpeg::avcodec 
+        FFmpeg::avformat 
+        FFmpeg::avutil 
+        FFmpeg::swresample
+    )
+    
+    if(WIN32)
+        file(GLOB FFMPEG_DLLS "${FFMPEG_ROOT}/bin/*.dll")
+        add_custom_command(TARGET PAW POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${FFMPEG_DLLS}
+            $<TARGET_FILE_DIR:PAW>
+            COMMENT "Deploying Custom FFmpeg DLLs..."
+        )
+    endif()
 endif()
 
-# 3. TagLib (Bundled)
 set(TAGLIB_DIR "${CMAKE_SOURCE_DIR}/extern/taglib")
 if(EXISTS ${TAGLIB_DIR}/CMakeLists.txt)
     add_subdirectory(${TAGLIB_DIR} EXCLUDE_FROM_ALL)
@@ -91,7 +136,6 @@ else()
     message(FATAL_ERROR "TagLib source not found.")
 endif()
 
-# 4. JSON (Bundled)
 set(JSON_DIR "${CMAKE_SOURCE_DIR}/extern/json")
 if(EXISTS ${JSON_DIR}/CMakeLists.txt)
     set(JSON_BuildTests OFF CACHE INTERNAL "")

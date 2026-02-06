@@ -2,8 +2,12 @@
 .vscode/
 build
 test
-/.vs
 /CMakeSettings.json
 .qtcreator
 deploy
-out
+out/
+.vs/
+extern/ffmpeg_src/
+extern/ffmpeg_build/
+
+!extern/ffmpeg_minimal/

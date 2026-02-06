@@ -1,0 +1,14 @@
+prefix=../ffmpeg_minimal
+exec_prefix=${prefix}
+libdir=../ffmpeg_minimal/lib
+includedir=../ffmpeg_minimal/include
+
+Name: libavfilter
+Description: FFmpeg audio/video filtering library
+Version: 11.12.100
+Requires: 
+Requires.private: libswresample >= 6.2.100, libavutil >= 60.24.100
+Conflicts:
+Libs: -L${libdir}  -lavfilter 
+Libs.private: -lm -latomic -lz
+Cflags: -I${includedir}
