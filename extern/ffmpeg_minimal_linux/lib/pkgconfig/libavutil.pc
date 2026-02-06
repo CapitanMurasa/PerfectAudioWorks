@@ -1,0 +1,14 @@
+prefix=../ffmpeg_minimal_linux
+exec_prefix=${prefix}
+libdir=../ffmpeg_minimal_linux/lib
+includedir=../ffmpeg_minimal_linux/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 60.24.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -lm -lz -lssl -lcrypto -latomic -pthread -lX11
+Cflags: -I${includedir}
