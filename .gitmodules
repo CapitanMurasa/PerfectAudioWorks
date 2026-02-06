@@ -4,6 +4,3 @@
 [submodule "extern/json"]
 	path = extern/json
 	url = https://github.com/nlohmann/json.git
-[submodule "extern/faad2"]
-	path = extern/faad2
-	url = https://github.com/ralph-irving/faad2.git
