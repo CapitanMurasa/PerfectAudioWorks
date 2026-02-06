@@ -112,7 +112,7 @@ void Main_PAW_widget::dragEnterEvent(QDragEnterEvent* event) {
 void Main_PAW_widget::dropEvent(QDropEvent* event) {
     const QList<QUrl> urls = event->mimeData()->urls();
 
-    static const QStringList supportedFormats = { "mp3", "wav", "flac", "ogg", "opus" };
+    static const QStringList supportedFormats = { "mp3", "wav", "flac", "ogg", "opus", "m4a", "aac"};
 
     for (const QUrl& url : urls) {
         QString filePath = url.toLocalFile();
@@ -146,7 +146,7 @@ void Main_PAW_widget::dropEvent(QDropEvent* event) {
 
 void Main_PAW_widget::addFolderToPlaylist(const QString& folderPath) {
     QStringList filters;
-    filters << "*.mp3" << "*.wav" << "*.flac" << "*.ogg" << "*.opus";
+    filters << "*.mp3" << "*.wav" << "*.flac" << "*.ogg" << "*.opus" << "*.m4a" << "*.aac";
 
     QDirIterator it(folderPath, filters, QDir::Files, QDirIterator::Subdirectories);
 
@@ -341,7 +341,7 @@ void Main_PAW_widget::handlePlaybackFinished() {
 }
 
 void Main_PAW_widget::on_actionopen_file_triggered() {
-    QString filename = QFileDialog::getOpenFileName(this, "Open Audio File", "", "Audio Files (*.wav *.flac *.ogg *.opus *.mp3);;All Files (*)");
+    QString filename = QFileDialog::getOpenFileName(this, "Open Audio File", "", "Audio Files (*.wav *.flac *.ogg *.opus *.mp3 *.m4a *.aac);;All Files (*)");
     if (!filename.isEmpty()) {
         start_playback(filename);
     }
@@ -399,7 +399,7 @@ void Main_PAW_widget::ClearUi() {
 }
 
 void Main_PAW_widget::addFilesToPlaylist() {
-    QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus);;All Files (*)");
+    QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus *.m4a *.aac);;All Files (*)");
 
     for (const QString& file : files) {
         if (saveplaylist) {
