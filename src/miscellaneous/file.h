@@ -33,6 +33,8 @@ typedef struct {
 extern "C" {
 #endif
 
+    extern bool CanItUseExternalAlbumart;
+    void setCanUseExternalAlbumart(bool value);
     const char* get_file_format(const char* filename);
 
     #ifdef _WIN32

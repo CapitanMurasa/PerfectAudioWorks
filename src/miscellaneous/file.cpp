@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <fstream>
 #include <filesystem>
+#include <vector>
 
 #include <taglib/taglib.h>
 #include <taglib/fileref.h>
@@ -27,11 +28,18 @@
 #include <taglib/opusfile.h>
 #include <taglib/xiphcomment.h>
 
+#include <taglib/mp4file.h>
+#include <taglib/mp4tag.h>
+#include <taglib/mp4item.h>
+#include <taglib/mp4coverart.h>
+
 #ifdef _WIN32
 #define str_cmp_idx _stricmp
 #else
 #define str_cmp_idx strcasecmp
 #endif
+
+bool CanItUseExternalAlbumart = false;
 
 static void copy_taglib_string(const TagLib::String& source, char* dest, size_t size) {
     if (source.isEmpty()) {
@@ -46,6 +54,7 @@ static void extract_cover_art(TagLib::File* file, FileInfo* info, const char* ex
     info->cover_image = nullptr;
     info->cover_size = 0;
 
+    // --- MP3 ---
     if (str_cmp_idx(ext, "mp3") == 0) {
         TagLib::MPEG::File* mpegFile = dynamic_cast<TagLib::MPEG::File*>(file);
         if (mpegFile && mpegFile->ID3v2Tag()) {
@@ -56,10 +65,13 @@ static void extract_cover_art(TagLib::File* file, FileInfo* info, const char* ex
 
                 info->cover_size = f->picture().size();
                 info->cover_image = (unsigned char*)malloc(info->cover_size);
-                memcpy(info->cover_image, f->picture().data(), info->cover_size);
+                if (info->cover_image) {
+                    memcpy(info->cover_image, f->picture().data(), info->cover_size);
+                }
             }
         }
     }
+    // --- FLAC ---
     else if (str_cmp_idx(ext, "flac") == 0) {
         TagLib::FLAC::File* flacFile = dynamic_cast<TagLib::FLAC::File*>(file);
         if (flacFile && !flacFile->pictureList().isEmpty()) {
@@ -67,9 +79,12 @@ static void extract_cover_art(TagLib::File* file, FileInfo* info, const char* ex
 
             info->cover_size = pic->data().size();
             info->cover_image = (unsigned char*)malloc(info->cover_size);
-            memcpy(info->cover_image, pic->data().data(), info->cover_size);
+            if (info->cover_image) {
+                memcpy(info->cover_image, pic->data().data(), info->cover_size);
+            }
         }
     }
+    // --- WAV ---
     else if (str_cmp_idx(ext, "wav") == 0) {
         TagLib::RIFF::WAV::File* wavFile = dynamic_cast<TagLib::RIFF::WAV::File*>(file);
         if (wavFile && wavFile->ID3v2Tag()) {
@@ -80,10 +95,13 @@ static void extract_cover_art(TagLib::File* file, FileInfo* info, const char* ex
 
                 info->cover_size = f->picture().size();
                 info->cover_image = (unsigned char*)malloc(info->cover_size);
-                memcpy(info->cover_image, f->picture().data(), info->cover_size);
+                if (info->cover_image) {
+                    memcpy(info->cover_image, f->picture().data(), info->cover_size);
+                }
             }
         }
     }
+    // --- OPUS ---
     else if (str_cmp_idx(ext, "opus") == 0) {
         TagLib::Ogg::Opus::File* opusFile = dynamic_cast<TagLib::Ogg::Opus::File*>(file);
         if (opusFile && opusFile->tag()) {
@@ -93,7 +111,31 @@ static void extract_cover_art(TagLib::File* file, FileInfo* info, const char* ex
 
                 info->cover_size = pic->data().size();
                 info->cover_image = (unsigned char*)malloc(info->cover_size);
-                memcpy(info->cover_image, pic->data().data(), info->cover_size);
+                if (info->cover_image) {
+                    memcpy(info->cover_image, pic->data().data(), info->cover_size);
+                }
+            }
+        }
+    }
+    // --- M4A / MP4 / AAC ---
+    else if (str_cmp_idx(ext, "m4a") == 0 || str_cmp_idx(ext, "mp4") == 0 || str_cmp_idx(ext, "aac") == 0) {
+        TagLib::MP4::File* mp4File = dynamic_cast<TagLib::MP4::File*>(file);
+        if (mp4File && mp4File->tag()) {
+            TagLib::MP4::Tag* mp4Tag = dynamic_cast<TagLib::MP4::Tag*>(mp4File->tag());
+
+            if (mp4Tag && mp4Tag->itemMap().contains("covr")) {
+                TagLib::MP4::Item coverItem = mp4Tag->itemMap()["covr"];
+                TagLib::MP4::CoverArtList coverList = coverItem.toCoverArtList();
+
+                if (!coverList.isEmpty()) {
+                    TagLib::MP4::CoverArt cover = coverList.front();
+
+                    info->cover_size = cover.data().size();
+                    info->cover_image = (unsigned char*)malloc(info->cover_size);
+                    if (info->cover_image) {
+                        memcpy(info->cover_image, cover.data().data(), info->cover_size);
+                    }
+                }
             }
         }
     }
@@ -101,22 +143,30 @@ static void extract_cover_art(TagLib::File* file, FileInfo* info, const char* ex
 
 static void get_albumart_fromfolder(FileInfo* info) {
     std::vector<std::string> targets = { "folder.jpg", "cover.jpg", "album.jpg" };
-    std::filesystem::path songPath(info->filename);
+
+    if (!info->filename && info->filename != nullptr) return;
+
+    std::filesystem::path songPath(info->filename); 
+    if (!songPath.has_parent_path()) return;
+
     std::filesystem::path parentDir = songPath.parent_path();
 
     for (const auto& name : targets) {
         std::filesystem::path fullPath = parentDir / name;
-        if (std::filesystem::exists(fullPath)) {
+        std::error_code ec;
+        if (std::filesystem::exists(fullPath, ec)) {
             std::ifstream input(fullPath, std::ios::binary | std::ios::ate);
             if (input) {
                 std::streamsize size = input.tellg();
                 input.seekg(0, std::ios::beg);
 
-                info->cover_size = static_cast<size_t>(size);
-                info->cover_image = (unsigned char*)malloc(info->cover_size);
+                if (size > 0) {
+                    info->cover_size = static_cast<size_t>(size);
+                    info->cover_image = (unsigned char*)malloc(info->cover_size);
 
-                if (info->cover_image) {
-                    input.read((char*)info->cover_image, size);
+                    if (info->cover_image) {
+                        input.read((char*)info->cover_image, size);
+                    }
                 }
                 return;
             }
@@ -156,12 +206,12 @@ static int process_file_internal(TagLib::FileRef& f, FileInfo* info, const char*
         copy_taglib_string(tag->genre(), info->genre, INFO_BUFFER_SIZE);
     }
     else {
-          info->title[0] = '\0'; info->artist[0] = '\0';
-          info->album[0] = '\0'; info->genre[0] = '\0';
+        info->title[0] = '\0'; info->artist[0] = '\0';
+        info->album[0] = '\0'; info->genre[0] = '\0';
     }
 
     extract_cover_art(f.file(), info, ext);
-    if (info->cover_image == nullptr) {
+    if (info->cover_image == nullptr && CanItUseExternalAlbumart == true) {
         get_albumart_fromfolder(info);
     }
 
@@ -197,8 +247,7 @@ int get_metadata_w(const wchar_t* filename_w, FileInfo* info) {
 int get_metadata(const char* filename, FileInfo* info) {
     memset(info, 0, sizeof(FileInfo));
 
-
-    info->filename == filename;
+    info->filename = filename;
 
     std::string fn(filename);
     size_t dotPos = fn.find_last_of(".");
@@ -215,4 +264,8 @@ void FileInfo_cleanup(FileInfo* info) {
         info->cover_image = nullptr;
     }
     info->cover_size = 0;
+}
+
+void setCanUseExternalAlbumart(bool value) {
+    CanItUseExternalAlbumart = value;
 }

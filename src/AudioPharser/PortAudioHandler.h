@@ -24,6 +24,8 @@ public:
     void SetGain(float gain);
     QList<QPair<QString, int>> GetAllAvailableOutputDevices();
     void stop();
+    void changeAudioDevice(int newDeviceID);
+
 
 signals:
     void errorOccurred(const QString&);

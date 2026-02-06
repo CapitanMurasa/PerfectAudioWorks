@@ -32,6 +32,8 @@ void Main_PAW_widget::SetupUIElements() {
     connect(ui->actionAbout, &QAction::triggered, this, &Main_PAW_widget::openAbout);
     connect(ui->actionadd_files_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addFilesToPlaylist);
     connect(ui->actionadd_folders_to_playlist, &QAction::triggered, this, &Main_PAW_widget::on_actionAddFolder_triggered);
+    connect(ui->actionadd_current_file_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addCurrentPlayingfileToPlaylist);
+    
     connect(ui->Stop, &QPushButton::clicked, this, &Main_PAW_widget::StopPlayback);
     connect(ui->PreviousTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayPreviousItem);
     connect(ui->NextTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayNextItem);
@@ -59,36 +61,36 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     ui->setupUi(this);
 
     aboutfile = nullptr;
-    currentItemPlaying = nullptr; // Initialize to prevent crashes
+    currentItemPlaying = nullptr;
 
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
 
-    if (loader.load_jsonfile(settings, "settings.json")) {
-        if (settings.contains("save_playlists")) {
-            saveplaylist = settings["save_playlists"].get<bool>();
-            if (saveplaylist == true) {
-                if (loader.load_jsonfile(playlist, "playlist.json")) {
-                    addFilesToPlaylistfromJson();
-                }
-                else {
-                    playlist = json::array();
-                }
-            }
+    if (!loader.load_jsonfile(settings, "settings.json")) {
+        settings = nlohmann::json::object();
+        settings["save_playlists"] = true;
+        settings["auto_skip_tracks"] = true;
+        qDebug() << "Settings not found, using defaults.";
+    }
+
+    saveplaylist = settings.value("save_playlists", true);
+    CanAutoSwitch = settings.value("auto_skip_tracks", true);
+
+    if (saveplaylist) {
+        if (!loader.load_jsonfile(playlist, "playlist.json")) {
+            playlist = nlohmann::json::array();
+            qDebug() << "Playlist file missing, initialized empty array.";
         }
-        if (settings.contains("auto_skip_tracks")) {
-            if (settings["auto_skip_tracks"].get<bool>() == true) {
-                CanAutoSwitch = true;
-            }
-            else {
-                CanAutoSwitch = false;
-            }
+        else {
+            addFilesToPlaylistfromJson();
         }
+    }
+    else {
+        playlist = nlohmann::json::array();
     }
 
     SetupUIElements();
     SetupQtActions();
-
     m_updateTimer = new QTimer(this);
 }
 
@@ -112,7 +114,7 @@ void Main_PAW_widget::dragEnterEvent(QDragEnterEvent* event) {
 void Main_PAW_widget::dropEvent(QDropEvent* event) {
     const QList<QUrl> urls = event->mimeData()->urls();
 
-    static const QStringList supportedFormats = { "mp3", "wav", "flac", "ogg", "opus" };
+    static const QStringList supportedFormats = { "mp3", "wav", "flac", "ogg", "opus", "m4a", "aac"};
 
     for (const QUrl& url : urls) {
         QString filePath = url.toLocalFile();
@@ -146,7 +148,7 @@ void Main_PAW_widget::dropEvent(QDropEvent* event) {
 
 void Main_PAW_widget::addFolderToPlaylist(const QString& folderPath) {
     QStringList filters;
-    filters << "*.mp3" << "*.wav" << "*.flac" << "*.ogg" << "*.opus";
+    filters << "*.mp3" << "*.wav" << "*.flac" << "*.ogg" << "*.opus" << "*.m4a" << "*.aac";
 
     QDirIterator it(folderPath, filters, QDir::Files, QDirIterator::Subdirectories);
 
@@ -341,9 +343,51 @@ void Main_PAW_widget::handlePlaybackFinished() {
 }
 
 void Main_PAW_widget::on_actionopen_file_triggered() {
-    QString filename = QFileDialog::getOpenFileName(this, "Open Audio File", "", "Audio Files (*.wav *.flac *.ogg *.opus *.mp3);;All Files (*)");
+    QString filename = QFileDialog::getOpenFileName(this, "Open Audio File", "", "Audio Files (*.wav *.flac *.ogg *.opus *.mp3 *.m4a *.aac);;All Files (*)");
     if (!filename.isEmpty()) {
         start_playback(filename);
+    }
+}
+
+void Main_PAW_widget::addCurrentPlayingfileToPlaylist() {
+    if (m_currentFile.isEmpty()) {
+        QMessageBox::information(this, "Info", "No track is currently playing.");
+        return;
+    }
+
+    if (saveplaylist) {
+        std::string stdPath = m_currentFile.toStdString();
+        bool alreadyExists = false;
+
+        for (const auto& item : playlist) {
+            if (item.get<std::string>() == stdPath) {
+                alreadyExists = true;
+                break;
+            }
+        }
+
+        if (alreadyExists) {
+            QMessageBox::information(this, "Info", "Track is already in the playlist.");
+            return;
+        }
+
+        playlist.push_back(stdPath);
+        loader.save_config(playlist, "playlist.json");
+    }
+
+    ProcessFilesList(m_currentFile);
+
+
+    if (ui->Playlist->count() > 0) {
+        QListWidgetItem* newItem = ui->Playlist->item(ui->Playlist->count() - 1);
+        if (newItem->data(Qt::UserRole).toString() == m_currentFile) {
+            currentItemPlaying = newItem;
+
+            QFont boldFont = newItem->font();
+            boldFont.setBold(true);
+            newItem->setFont(boldFont);
+            ui->Playlist->setCurrentItem(newItem);
+        }
     }
 }
 
@@ -399,7 +443,7 @@ void Main_PAW_widget::ClearUi() {
 }
 
 void Main_PAW_widget::addFilesToPlaylist() {
-    QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus);;All Files (*)");
+    QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus *.m4a *.aac);;All Files (*)");
 
     for (const QString& file : files) {
         if (saveplaylist) {

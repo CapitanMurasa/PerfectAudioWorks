@@ -1,5 +1,6 @@
 #include "settings_paw_gui.h"
 #include "ui_settings_paw_gui.h"
+#include "../AudioPharser/PortAudioHandler.h"
 #include <QPushButton>
 
 Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, QWidget* parent)
@@ -49,50 +50,50 @@ void Settings_PAW_gui::SetupJson() {
         ui->SavePlaylistsCheck->setChecked(settings["save_playlists"].get<bool>());
     }
 
-    if (settings.contains("auto_skip_tracks") && settings["auto_skip_tracks"].is_boolean()) {
-        ui->AutoSkipTracks->setChecked(settings["auto_skip_tracks"].get<bool>());
-    }
-    else{
-        settings["auto_skip_tracks"] = true;
-    }
+    bool autoSkip = settings.value("auto_skip_tracks", true); 
+    ui->AutoSkipTracks->setChecked(autoSkip);
+    settings["auto_skip_tracks"] = autoSkip;
+    if (mainwidget) mainwidget->CanAutoSwitch = autoSkip;
 
+    bool useExtArt = settings.value("use_external_album_art", true);
+    ui->UseExternalAlbumArt->setChecked(useExtArt);
+    settings["use_external_album_art"] = useExtArt;
+    setCanUseExternalAlbumart(useExtArt);
 
     if (settings.contains("audio_device_index")) {
         int savedIdx = settings["audio_device_index"].get<int>();
         int uiIdx = ui->audioDeviceComboBox->findData(savedIdx);
+
         if (uiIdx != -1) {
             ui->audioDeviceComboBox->setCurrentIndex(uiIdx);
+            if (m_audiothread->isRunning()) {
+                m_audiothread->changeAudioDevice(savedIdx);
+            }
+            else {
+                m_audiothread->setAudioDevice(savedIdx); 
+            }
+
         }
     }
-
 }
 
 void Settings_PAW_gui::applySettings() {
     if (m_audiothread) {
         int selectedPaDeviceIndex = ui->audioDeviceComboBox->currentData().toInt();
-        m_audiothread->setAudioDevice(selectedPaDeviceIndex);
-
+        m_audiothread->changeAudioDevice(selectedPaDeviceIndex);
         settings["audio_device_index"] = selectedPaDeviceIndex;
     }
 
+    bool savePlaylists = ui->SavePlaylistsCheck->isChecked();
+    settings["save_playlists"] = savePlaylists;
 
-    if (ui->SavePlaylistsCheck->isChecked()) {
-        settings["save_playlists"] = true;
-    }
-    else {
-        settings["save_playlists"] = false;
-    }
+    bool autoSkip = ui->AutoSkipTracks->isChecked();
+    settings["auto_skip_tracks"] = autoSkip;
+    if (mainwidget) mainwidget->CanAutoSwitch = autoSkip;
 
-    if (ui->AutoSkipTracks->isChecked()) {
-
-        settings["auto_skip_tracks"] = true;
-        mainwidget->CanAutoSwitch = true;
-    }
-    else {
-        settings["auto_skip_tracks"] = false;
-        mainwidget->CanAutoSwitch = false;
-    }
-
+    bool useExtArt = ui->UseExternalAlbumArt->isChecked();
+    settings["use_external_album_art"] = useExtArt;
+    setCanUseExternalAlbumart(useExtArt);
 
     loader.save_config(settings, "settings.json");
 }
