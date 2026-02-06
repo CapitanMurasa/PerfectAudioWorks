@@ -69,45 +69,50 @@ else()
     message(FATAL_ERROR "PortAudio not found.")
 endif()
 
-# --- FFmpeg (Custom Minimal Build) ---
+# --- FFmpeg Configuration ---
 if(ENABLE_FFMPEG)
-    message(STATUS "Configuring Custom FFmpeg...")
     
-    get_filename_component(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/extern/ffmpeg_minimal" ABSOLUTE)
-    
-    
-    add_library(FFmpeg::avcodec SHARED IMPORTED)
-    set_target_properties(FFmpeg::avcodec PROPERTIES
-        IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/avcodec.lib"        
-        IMPORTED_LOCATION "${FFMPEG_ROOT}/bin/avcodec-62.dll"  
-        INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
-    )
-    
-    add_library(FFmpeg::avformat SHARED IMPORTED)
-    set_target_properties(FFmpeg::avformat PROPERTIES
-        IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/avformat.lib"
-        IMPORTED_LOCATION "${FFMPEG_ROOT}/bin/avformat-62.dll"  
-        INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
-    )
+    if(WIN32)
+        get_filename_component(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/extern/ffmpeg_minimal" ABSOLUTE)
+        set(LIB_SUFFIX ".lib")
+        set(BIN_SUFFIX ".dll")
+        set(LIB_PREFIX "")     
+    elseif(UNIX)
+        get_filename_component(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/extern/ffmpeg_minimal_linux" ABSOLUTE)
+        set(LIB_SUFFIX ".so")
+        set(BIN_SUFFIX ".so")   
+        set(LIB_PREFIX "lib")  
+    endif()
 
-    add_library(FFmpeg::avutil SHARED IMPORTED)
-    set_target_properties(FFmpeg::avutil PROPERTIES
-        IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/avutil.lib"
-        IMPORTED_LOCATION "${FFMPEG_ROOT}/bin/avutil-60.dll"    
-        INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
-    )
+    message(STATUS "Using Custom FFmpeg from: ${FFMPEG_ROOT}")
     
-    add_library(FFmpeg::swresample SHARED IMPORTED)
-    set_target_properties(FFmpeg::swresample PROPERTIES
-        IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/swresample.lib"
-        IMPORTED_LOCATION "${FFMPEG_ROOT}/bin/swresample-6.dll" 
-        INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
-    )
-    
+    macro(setup_ffmpeg_target name version)
+        add_library(FFmpeg::${name} SHARED IMPORTED)
+        
+        if(WIN32)
+            set_target_properties(FFmpeg::${name} PROPERTIES
+                IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/${name}${LIB_SUFFIX}"
+                IMPORTED_LOCATION "${FFMPEG_ROOT}/bin/${name}-${version}${BIN_SUFFIX}"
+                INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
+            )
+        else()
+
+            set_target_properties(FFmpeg::${name} PROPERTIES
+                IMPORTED_LOCATION "${FFMPEG_ROOT}/lib/${LIB_PREFIX}${name}${LIB_SUFFIX}"
+                INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
+            )
+        endif()
+    endmacro()
+
+
+    setup_ffmpeg_target(avcodec    62) 
+    setup_ffmpeg_target(avformat   62)
+    setup_ffmpeg_target(avutil     60)
+    setup_ffmpeg_target(swresample 6)
+
 
     target_compile_definitions(PAW PRIVATE ENABLE_FFMPEG)
     target_sources(PAW PRIVATE src/AudioPharser/ffmpegdecoder.c)
-    
     target_link_libraries(PAW PRIVATE 
         FFmpeg::avcodec 
         FFmpeg::avformat 
@@ -115,15 +120,14 @@ if(ENABLE_FFMPEG)
         FFmpeg::swresample
     )
     
-    if(WIN32)
-        file(GLOB FFMPEG_DLLS "${FFMPEG_ROOT}/bin/*.dll")
-        add_custom_command(TARGET PAW POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${FFMPEG_DLLS}
-            $<TARGET_FILE_DIR:PAW>
-            COMMENT "Deploying Custom FFmpeg DLLs..."
+
+    if(UNIX)
+        install(DIRECTORY "${FFMPEG_ROOT}/lib/" 
+                DESTINATION lib 
+                FILES_MATCHING PATTERN "*.so*"
         )
     endif()
+
 endif()
 
 set(TAGLIB_DIR "${CMAKE_SOURCE_DIR}/extern/taglib")
@@ -204,15 +208,12 @@ if(WIN32)
 endif()
 
 if(UNIX AND NOT APPLE)
-    # 1. Install the Desktop File
     install(FILES "${CMAKE_SOURCE_DIR}/paw.desktop" DESTINATION share/applications)
-
-    # 2. Install the 64x64 Icon
+    
     install(FILES "${CMAKE_SOURCE_DIR}/src/assets/icon_64.png" 
             DESTINATION share/icons/hicolor/64x64/apps 
             RENAME paw.png)
-
-    # 3. Install the 256x256 Icon
+            
     install(FILES "${CMAKE_SOURCE_DIR}/src/assets/icon_256.png" 
             DESTINATION share/icons/hicolor/256x256/apps 
             RENAME paw.png)
