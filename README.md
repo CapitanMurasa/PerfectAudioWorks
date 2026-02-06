@@ -20,24 +20,8 @@ Currently, the player:
 * `.opus` (Opus codec in Ogg container)
 * `.ogg` (Ogg Vorbis)
 * `.mp3` (via mpg123)
-
-### Planned via **separate codecs**
-
 * `.aac` (via FFmpeg)
-* Other compressed/streaming formats (future plugin system)
-
----
-
-## Codecs Table
-
-| Format | Handled by | Status     |
-| ------ | ---------- | ---------- |
-| WAV    | libsndfile | ✅ Works    |
-| FLAC   | libsndfile | ✅ Works    |
-| OGG    | libsndfile | ✅ Works    |
-| Opus   | libsndfile | ✅ Works    |
-| MP3    | mpg123     | ✅ Works    |
-| AAC    | FFmpeg     | 🔜 Planned |
+* `.m4a` (via FFmpeg)
 
 ---
 
@@ -47,6 +31,7 @@ Currently, the player:
 | ---------- | -------- | ---------------- | ---------------------------------------- |
 | libsndfile | ✅        | `-DENABLE_SNDFILE` | Handles WAV, FLAC, OGG, Opus             |
 | mpg123     | ✅        | `-DENABLE_MPG123`  | Handles MP3 playback                     |
+| ffmpeg     | ✅        | `-DENABLE_FFMPEG`  | Handles m4a aac playback                     |
 
 
 ## Installation & Compilation
@@ -55,10 +40,13 @@ Currently, the player:
 
 * `portaudio`
 * `Qt6`
+* `LibTag`
+* `nlohmann/json`
 * Optional codecs:
 
   * `libsndfile` (WAV, FLAC, OGG, Opus)
   * `mpg123` (MP3)
+  * `FFmpeg` (AAC M4A)
 
 
 ### Cloning repository
