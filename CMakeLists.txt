@@ -183,31 +183,77 @@ if (WIN32)
     endif()
 endif()
 
-# --- Install & Package ---
 include(GNUInstallDirs)
-install(TARGETS PAW RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+install(TARGETS PAW RUNTIME DESTINATION bin)
 
 if(WIN32)
-    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/deploy/bin/"
-            DESTINATION bin
-            FILES_MATCHING PATTERN "*.dll")
-    
-    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/deploy/bin/platforms" DESTINATION bin)
-    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/deploy/bin/styles" DESTINATION bin)
+    file(GLOB FFMPEG_DLLS "${FFMPEG_ROOT}/bin/*.dll")
+    install(FILES ${FFMPEG_DLLS} DESTINATION bin)
+
+    find_program(WINDEPLOYQT_EXE windeployqt HINTS ${Qt6_DIR}/../../../bin)
+
+    if(WINDEPLOYQT_EXE)
+        install(CODE "
+            message(STATUS \"Running windeployqt to bundle Qt dependencies...\")
+            execute_process(
+                COMMAND \"${WINDEPLOYQT_EXE}\"
+                \"--no-translations\"
+                \"--compiler-runtime\"
+                \"--no-opengl-sw\"
+                \"--dir\" \"\${CMAKE_INSTALL_PREFIX}/bin\"
+                \"\${CMAKE_INSTALL_PREFIX}/bin/PAW.exe\"
+            )
+        ")
+    else()
+        message(WARNING "windeployqt not found! You will need to copy Qt DLLs manually.")
+    endif()
+endif()
+
+if(UNIX AND NOT APPLE)
+    install(FILES "${CMAKE_SOURCE_DIR}/paw.desktop" DESTINATION share/applications)
+    install(FILES "${CMAKE_SOURCE_DIR}/src/assets/paw.png" DESTINATION share/icons/hicolor/256x256/apps)
 endif()
 
 # --- NSIS Installer ---
-set(CPACK_GENERATOR "NSIS")
 set(CPACK_PACKAGE_NAME "PerfectAudioWorks")
 set(CPACK_PACKAGE_VENDOR "CapitanMurasa")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Audio Player")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Lightweight Audio Player")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "PerfectAudioWorks")
-set(CPACK_NSIS_DISPLAY_NAME "PerfectAudioWorks")
-set(CPACK_NSIS_PACKAGE_NAME "PerfectAudioWorks")
-set(CPACK_NSIS_HELP_LINK "https://github.com/CapitanMurasa/PerfectAudioWorks")
-set(CPACK_NSIS_CREATE_ICONS_EXTRA "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'")
-set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "CreateShortCut '$DESKTOP\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'")
-set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "Delete '$DESKTOP\\\\PerfectAudioWorks.lnk'")
-set(CPACK_NSIS_WELCOME_TITLE "Welcome to PerfectAudioWorks installation wizard")
+set(CPACK_PACKAGE_CONTACT "https://github.com/CapitanMurasa/PerfectAudioWorks")
+
+if(WIN32)
+    set(CPACK_GENERATOR "NSIS")
+    set(CPACK_NSIS_DISPLAY_NAME "PerfectAudioWorks")
+    set(CPACK_NSIS_PACKAGE_NAME "PerfectAudioWorks ${PROJECT_VERSION}")
+    set(CPACK_NSIS_LICENSE_PAGE_HEADER "PerfectAudioWorks License Agreement")
+    
+    set(CPACK_NSIS_CREATE_ICONS_EXTRA "
+        CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'
+    ")
+    
+    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+        CreateShortCut '$DESKTOP\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'
+    ")
+    
+    set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+        Delete '$DESKTOP\\\\PerfectAudioWorks.lnk'
+        Delete '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\PerfectAudioWorks.lnk'
+    ")
+    
+
+endif()
+
+if(UNIX AND NOT APPLE)
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "CapitanMurasa")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON) 
+    set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE") 
+endif()
 
 include(CPack)
