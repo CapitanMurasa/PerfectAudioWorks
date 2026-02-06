@@ -135,4 +135,4 @@ Run the player:
 
 ## License
 
-⚠️ No license has been set yet. Currently, the project is **source-available**, but not under an open-source license.
+It uses GNU GPLv3 license (see LICENSE for further details)
