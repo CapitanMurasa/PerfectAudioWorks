@@ -1,21 +1,29 @@
 #ifndef CODECHANDLER_H
 #define CODECHANDLER_H
 
-#include "libsndfiledecoder.h"
-#include "mpg123decoder.h"
-#ifdef ENABLE_FAAD
-#include "faaddecoder.h"
-#endif
-#include "../miscellaneous/file.h"
 #include <stdlib.h>
 #include <string.h>
 #include <portaudio.h>
 
+#ifdef ENABLE_FFMPEG
+#include "ffmpegdecoder.h"
+#endif
+
+#ifdef ENABLE_SNDFILE
+#include "libsndfiledecoder.h"
+#endif
+
+#ifdef ENABLE_MPG123
+#include "mpg123decoder.h"
+#endif
+
+#include "../miscellaneous/file.h"
+
 typedef enum {
     CODEC_TYPE_NONE = 0,
+    CODEC_TYPE_FFMPEG,
     CODEC_TYPE_SNDFILE,
-    CODEC_TYPE_MPG123,
-    CODEC_TYPE_FAAD
+    CODEC_TYPE_MPG123
 } CodecType;
 
 typedef struct CodecHandler CodecHandler;
