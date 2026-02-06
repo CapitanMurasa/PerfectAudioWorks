@@ -188,26 +188,17 @@ include(GNUInstallDirs)
 install(TARGETS PAW RUNTIME DESTINATION bin)
 
 if(WIN32)
-    file(GLOB FFMPEG_DLLS "${FFMPEG_ROOT}/bin/*.dll")
-    install(FILES ${FFMPEG_DLLS} DESTINATION bin)
+    set(KNOWN_GOOD_BIN_DIR "${CMAKE_SOURCE_DIR}/out/install/Mingw64-Release/bin")
 
-    find_program(WINDEPLOYQT_EXE windeployqt HINTS ${Qt6_DIR}/../../../bin)
+    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/"
+        DESTINATION bin
+        FILES_MATCHING PATTERN "*.dll"
+    )
+    
+    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/platforms" DESTINATION bin)
+    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/styles"    DESTINATION bin)
+    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/imageformats" DESTINATION bin)
 
-    if(WINDEPLOYQT_EXE)
-        install(CODE "
-            message(STATUS \"Running windeployqt to bundle Qt dependencies...\")
-            execute_process(
-                COMMAND \"${WINDEPLOYQT_EXE}\"
-                \"--no-translations\"
-                \"--compiler-runtime\"
-                \"--no-opengl-sw\"
-                \"--dir\" \"\${CMAKE_INSTALL_PREFIX}/bin\"
-                \"\${CMAKE_INSTALL_PREFIX}/bin/PAW.exe\"
-            )
-        ")
-    else()
-        message(WARNING "windeployqt not found! You will need to copy Qt DLLs manually.")
-    endif()
 endif()
 
 if(UNIX AND NOT APPLE)
