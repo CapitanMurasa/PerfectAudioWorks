@@ -8,6 +8,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QAction>
+#include <QSystemTrayIcon>
 
 #include "../AudioPharser/PortAudioHandler.h" 
 #include "../miscellaneous/file.h" 
@@ -77,8 +78,9 @@ private:
     QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
     Aboutfile_PAW_gui *aboutfile;
-    About_PAW_gui about;
+    About_PAW_gui *about;
     JsonLoader loader;
+    QSystemTrayIcon *trayIcon;
 
     QString floatToMMSS(float totalSeconds);
     void updateAlbumArt();
@@ -90,6 +92,7 @@ private:
     void ProcessFilesList(const QString& file);
     void addFilesToPlaylistfromJson();
     void ClearUi();
+    void setupSystemTray();
 
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;

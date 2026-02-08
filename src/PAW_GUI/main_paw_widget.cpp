@@ -54,6 +54,32 @@ void Main_PAW_widget::SetupQtActions() {
     ui->Playlist->addAction(m_deleteAction);
 }
 
+void Main_PAW_widget::setupSystemTray() {
+    trayIcon = new QSystemTrayIcon(this);
+    trayIcon->setIcon(QIcon(":/assets/paw.ico")); 
+
+    QMenu* trayMenu = new QMenu(this);
+
+    //QAction* playAction = trayMenu->addAction("Play/Pause");
+    //connect(playAction, &QAction::triggered, this, &PortaudioThread::setPlayPause);
+
+    QAction* nextAction = trayMenu->addAction("Next");
+    connect(nextAction, &QAction::triggered, this, &Main_PAW_widget::PlayNextItem);
+
+    QAction* quitAction = trayMenu->addAction("Quit");
+    connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
+
+    trayIcon->setContextMenu(trayMenu);
+    trayIcon->show();
+
+    connect(trayIcon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
+        if (reason == QSystemTrayIcon::DoubleClick) {
+            this->show();
+            this->raise();
+        }
+        });
+}
+
 Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::Main_PAW_widget)
@@ -65,6 +91,7 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
 
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
+    about = new About_PAW_gui(this);
 
     if (!loader.load_jsonfile(settings, "settings.json")) {
         settings = nlohmann::json::object();
@@ -91,6 +118,7 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
 
     SetupUIElements();
     SetupQtActions();
+    setupSystemTray();
     m_updateTimer = new QTimer(this);
 }
 
@@ -624,7 +652,7 @@ void Main_PAW_widget::openSettings() {
 }
 
 void Main_PAW_widget::openAbout() {
-    about.show();
+    about->show();
 }
 
 void Main_PAW_widget::SetLoop() {
