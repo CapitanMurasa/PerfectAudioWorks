@@ -261,6 +261,7 @@ void Main_PAW_widget::LoadMetadatafromfile() {
         FileInfo_cleanup(&filemetadata);
 
         m_originalAlbumArt = artFound ? coverArt : QPixmap();
+        this->setWindowTitle(artist + " - " + title);
         ui->Filename->setText(title);
         ui->Artist->setText(artist);
     }
@@ -336,6 +337,7 @@ void Main_PAW_widget::handlePlaybackFinished() {
             });
     }
     else {
+        ClearUi();
         if (CanAutoSwitch) {
             QTimer::singleShot(0, this, &Main_PAW_widget::PlayNextItem);
         }
@@ -424,6 +426,8 @@ void Main_PAW_widget::StopPlayback() {
         bool oldState = m_audiothread->blockSignals(true);
 
         ClearUi();
+        
+        this->setWindowTitle("Perfect Audio Works");
 
         m_audiothread->stopPlayback();
 
