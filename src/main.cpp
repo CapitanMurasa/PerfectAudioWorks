@@ -4,6 +4,8 @@
 #include <QIcon>
 #include <QDebug>
 
+#include "PAW_GUI/GlobalLinuxKeys.h"
+
 int main(int argc, char* argv[]) {
     setvbuf(stdout, NULL, _IONBF, 0);
     setlocale(LC_ALL, ".UTF-8");
@@ -23,6 +25,19 @@ int main(int argc, char* argv[]) {
 
     Main_PAW_widget w;
     w.show();
+
+#ifdef Q_OS_LINUX
+    LinuxKeys* keys = new LinuxKeys(&w);
+
+    QObject::connect(keys, &LinuxKeys::playPauseRequested, &w, &MainWindow::togglePlayback);
+    QObject::connect(keys, &LinuxKeys::nextRequested, &w, &MainWindow::playNextSong);
+    QObject::connect(keys, &LinuxKeys::previousRequested, &w, &MainWindow::playPreviousSong);
+    QObject::connect(keys, &LinuxKeys::stopRequested, &w, &MainWindow::stopPlayback);
+
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    bus.registerService("org.mpris.MediaPlayer2.perfectaudioworks");
+    bus.registerObject("/org/mpris/MediaPlayer2", &w);
+#endif
 
 
     QStringList args = QCoreApplication::arguments();

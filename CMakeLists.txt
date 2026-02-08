@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
-project(PerfectAudioWorks VERSION 0.1.0 LANGUAGES CXX C)
+project(PerfectAudioWorks VERSION 0.1.1 LANGUAGES CXX C)
 
 # --- Compiler Settings ---
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # --- Qt Setup ---
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets DBus)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -22,6 +22,7 @@ set(SOURCES
     src/main.cpp
     src/assets/resources.rc
     src/assets.qrc
+    src/AudioPharser/AudioRingBuffer.c
     src/AudioPharser/PortAudioHandler.cpp
     src/AudioPharser/CodecHandler.c
     src/AudioPharser/portaudio_backend.c
@@ -177,6 +178,7 @@ endif()
 target_link_libraries(PAW PRIVATE
     Qt6::Core
     Qt6::Widgets
+    Qt6::DBus
     ${PORTAUDIO_TARGET}
     ${TAGLIB_TARGET}
     nlohmann_json::nlohmann_json  

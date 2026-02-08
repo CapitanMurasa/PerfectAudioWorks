@@ -2,6 +2,8 @@
 #include "ui_main_paw_widget.h"
 #include "aboutfile_paw_gui.h"
 #include "Proxy_style.h"
+#include "GlobalKeys.h"
+
 #include <cmath> 
 #include <string>
 #include <QMenu>        
@@ -14,6 +16,9 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QMimeData>
+#if _WIN32
+#include <windows.h>
+#endif
 
 void Main_PAW_widget::SetupUIElements() {
     ui->Playlist->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -54,6 +59,32 @@ void Main_PAW_widget::SetupQtActions() {
     ui->Playlist->addAction(m_deleteAction);
 }
 
+void Main_PAW_widget::setupSystemTray() {
+    trayIcon = new QSystemTrayIcon(this);
+    trayIcon->setIcon(QIcon(":/assets/paw.ico")); 
+
+    QMenu* trayMenu = new QMenu(this);
+
+    QAction* playAction = trayMenu->addAction("Play/Pause");
+    connect(playAction, &QAction::triggered, this, &Main_PAW_widget::PlayPauseButton);
+
+    QAction* nextAction = trayMenu->addAction("Next");
+    connect(nextAction, &QAction::triggered, this, &Main_PAW_widget::PlayNextItem);
+
+    QAction* quitAction = trayMenu->addAction("Quit");
+    connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
+
+    trayIcon->setContextMenu(trayMenu);
+    trayIcon->show();
+
+    connect(trayIcon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
+        if (reason == QSystemTrayIcon::DoubleClick) {
+            this->show();
+            this->raise();
+        }
+        });
+}
+
 Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::Main_PAW_widget)
@@ -65,6 +96,7 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
 
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
+    about = new About_PAW_gui(this);
 
     if (!loader.load_jsonfile(settings, "settings.json")) {
         settings = nlohmann::json::object();
@@ -75,6 +107,23 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
 
     saveplaylist = settings.value("save_playlists", true);
     CanAutoSwitch = settings.value("auto_skip_tracks", true);
+    UseSystemTray = settings.value("use_system_tray", true);
+
+#ifdef _WIN32
+    GlobalKeys::instance().install();
+
+    GlobalKeys::instance().setCallback([this](int key) {
+
+        QMetaObject::invokeMethod(this, [this, key]() {
+            switch (key) {
+            case VK_MEDIA_PLAY_PAUSE: PlayPauseButton(); break;
+            case VK_MEDIA_NEXT_TRACK: PlayNextItem(); break;
+            case VK_MEDIA_PREV_TRACK: PlayPreviousItem(); break;
+            case VK_MEDIA_STOP:       StopPlayback(); break;
+            }
+            });
+        });
+#endif
 
     if (saveplaylist) {
         if (!loader.load_jsonfile(playlist, "playlist.json")) {
@@ -88,6 +137,11 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     else {
         playlist = nlohmann::json::array();
     }
+
+    if (UseSystemTray) {
+        setupSystemTray();
+    }
+
 
     SetupUIElements();
     SetupQtActions();
@@ -261,6 +315,7 @@ void Main_PAW_widget::LoadMetadatafromfile() {
         FileInfo_cleanup(&filemetadata);
 
         m_originalAlbumArt = artFound ? coverArt : QPixmap();
+        this->setWindowTitle(artist + " - " + title);
         ui->Filename->setText(title);
         ui->Artist->setText(artist);
     }
@@ -336,6 +391,7 @@ void Main_PAW_widget::handlePlaybackFinished() {
             });
     }
     else {
+        ClearUi();
         if (CanAutoSwitch) {
             QTimer::singleShot(0, this, &Main_PAW_widget::PlayNextItem);
         }
@@ -424,6 +480,8 @@ void Main_PAW_widget::StopPlayback() {
         bool oldState = m_audiothread->blockSignals(true);
 
         ClearUi();
+        
+        this->setWindowTitle("Perfect Audio Works");
 
         m_audiothread->stopPlayback();
 
@@ -488,7 +546,7 @@ void Main_PAW_widget::ProcessFilesList(const QString& file) {
     if (metadata_result == 0) {
         QString title = (strlen(filemetadata.title) > 0) ? QString::fromUtf8(filemetadata.title) : QFileInfo(file).fileName();
         QString artist = (strlen(filemetadata.artist) > 0) ? QString::fromUtf8(filemetadata.artist) : "";
-        displayText = artist.isEmpty() ? title : title + " - " + artist;
+        displayText = artist.isEmpty() ? title : artist + " - " + title;
         FileInfo_cleanup(&filemetadata);
     }
     else {
@@ -620,7 +678,7 @@ void Main_PAW_widget::openSettings() {
 }
 
 void Main_PAW_widget::openAbout() {
-    about.show();
+    about->show();
 }
 
 void Main_PAW_widget::SetLoop() {

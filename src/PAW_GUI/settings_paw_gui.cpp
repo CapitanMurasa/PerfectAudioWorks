@@ -60,6 +60,11 @@ void Settings_PAW_gui::SetupJson() {
     settings["use_external_album_art"] = useExtArt;
     setCanUseExternalAlbumart(useExtArt);
 
+    bool EnableTray = settings.value("use_system_tray", true);
+    ui->EnableTray->setChecked(EnableTray);
+    settings["use_system_tray"] = EnableTray;
+    if (mainwidget) mainwidget->CanAutoSwitch = EnableTray;
+
     if (settings.contains("audio_device_index")) {
         int savedIdx = settings["audio_device_index"].get<int>();
         int uiIdx = ui->audioDeviceComboBox->findData(savedIdx);
@@ -94,6 +99,10 @@ void Settings_PAW_gui::applySettings() {
     bool useExtArt = ui->UseExternalAlbumArt->isChecked();
     settings["use_external_album_art"] = useExtArt;
     setCanUseExternalAlbumart(useExtArt);
+
+    bool EnableTray = ui->EnableTray->isChecked();
+    settings["use_system_tray"] = EnableTray;
+    if (mainwidget) mainwidget->CanAutoSwitch = autoSkip;
 
     loader.save_config(settings, "settings.json");
 }
