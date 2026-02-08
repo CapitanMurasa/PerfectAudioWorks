@@ -324,6 +324,8 @@
     <addaction name="actionadd_files_to_playlist"/>
     <addaction name="actionadd_folders_to_playlist"/>
     <addaction name="actionadd_current_file_to_playlist"/>
+    <addaction name="separator"/>
+    <addaction name="actionShow_Details"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -370,6 +372,11 @@
   <action name="actionadd_current_file_to_playlist">
    <property name="text">
     <string>add current file to playlist...</string>
+   </property>
+  </action>
+  <action name="actionShow_Details">
+   <property name="text">
+    <string>Show Details...</string>
    </property>
   </action>
  </widget>
