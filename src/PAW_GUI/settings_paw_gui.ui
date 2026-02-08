@@ -63,24 +63,6 @@
             <item row="0" column="1">
              <widget class="QComboBox" name="audioDeviceComboBox"/>
             </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="WriteSongsToRamLabel">
-              <property name="text">
-               <string>Write songs to RAM
-(more stable when I/O bottleneck is happening)</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QCheckBox" name="WriteSongsToRamCheck">
-              <property name="layoutDirection">
-               <enum>Qt::LayoutDirection::RightToLeft</enum>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
            </layout>
           </item>
           <item>
