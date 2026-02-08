@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(PerfectAudioWorks VERSION 0.1.0 LANGUAGES CXX C)
+project(PerfectAudioWorks VERSION 0.1.1 LANGUAGES CXX C)
 
 # --- Compiler Settings ---
 set(CMAKE_CXX_STANDARD 17)
