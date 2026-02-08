@@ -2,6 +2,8 @@
 #include "ui_main_paw_widget.h"
 #include "aboutfile_paw_gui.h"
 #include "Proxy_style.h"
+#include "GlobalKeys.h"
+
 #include <cmath> 
 #include <string>
 #include <QMenu>        
@@ -131,6 +133,22 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
 
     saveplaylist = settings.value("save_playlists", true);
     CanAutoSwitch = settings.value("auto_skip_tracks", true);
+
+#ifdef _WIN32
+    GlobalKeys::instance().install();
+
+    GlobalKeys::instance().setCallback([this](int key) {
+
+        QMetaObject::invokeMethod(this, [this, key]() {
+            switch (key) {
+            case VK_MEDIA_PLAY_PAUSE: PlayPauseButton(); break;
+            case VK_MEDIA_NEXT_TRACK: PlayNextItem(); break;
+            case VK_MEDIA_PREV_TRACK: PlayPreviousItem(); break;
+            case VK_MEDIA_STOP:       StopPlayback(); break;
+            }
+            });
+        });
+#endif
 
     if (saveplaylist) {
         if (!loader.load_jsonfile(playlist, "playlist.json")) {
