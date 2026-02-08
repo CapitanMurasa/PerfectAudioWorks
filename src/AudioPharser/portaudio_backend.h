@@ -2,6 +2,7 @@
 #define PORTAUDIO_BACKEND_H
 
 #include "CodecHandler.h"
+#include "AudioRingBuffer.h"
 #include <portaudio.h>
 #include <stdint.h>
 
@@ -17,7 +18,7 @@ typedef pthread_mutex_t pa_mutex_t;
 extern "C" {
 #endif
 
-    typedef struct {
+    typedef struct AudioPlayer{
         CodecHandler* codec;
         PaStream* stream;
         const char* CodecName;
@@ -30,6 +31,11 @@ extern "C" {
         int paused;
         pa_mutex_t lock;
         const char* filename;
+
+        AudioRing ringBuffer;      
+        void* decoderThreadHandle;  
+        int threadExitFlag;         
+        int isBuffering;
     } AudioPlayer;
 
     int audio_init();
@@ -61,4 +67,4 @@ extern "C" {
 }
 #endif
 
-#endif // PORTAUDIO_BACKEND_H
+#endif 

@@ -22,6 +22,7 @@ set(SOURCES
     src/main.cpp
     src/assets/resources.rc
     src/assets.qrc
+    src/AudioPharser/AudioRingBuffer.c
     src/AudioPharser/PortAudioHandler.cpp
     src/AudioPharser/CodecHandler.c
     src/AudioPharser/portaudio_backend.c
