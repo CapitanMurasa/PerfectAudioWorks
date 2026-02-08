@@ -59,32 +59,6 @@ void Main_PAW_widget::SetupQtActions() {
     ui->Playlist->addAction(m_deleteAction);
 }
 
-bool Main_PAW_widget::nativeEvent(const QByteArray& eventType, void* message, qintptr* result) {
-#ifdef Q_OS_WIN
-    MSG* msg = static_cast<MSG*>(message);
-
-    if (msg->message == WM_APPCOMMAND) {
-        int cmd = GET_APPCOMMAND_LPARAM(msg->lParam);
-
-        switch (cmd) {
-        case APPCOMMAND_MEDIA_PLAY_PAUSE: 
-            PlayPauseButton();
-            return true; 
-        case APPCOMMAND_MEDIA_NEXTTRACK:
-            PlayNextItem();
-            return true;
-        case APPCOMMAND_MEDIA_PREVIOUSTRACK: 
-            PlayPreviousItem();
-            return true;
-        case APPCOMMAND_MEDIA_STOP:
-            StopPlayback();
-            return true;
-        }
-    }
-#endif
-    return QMainWindow::nativeEvent(eventType, message, result);
-}
-
 void Main_PAW_widget::setupSystemTray() {
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setIcon(QIcon(":/assets/paw.ico")); 
@@ -133,6 +107,7 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
 
     saveplaylist = settings.value("save_playlists", true);
     CanAutoSwitch = settings.value("auto_skip_tracks", true);
+    UseSystemTray = settings.value("use_system_tray", true);
 
 #ifdef _WIN32
     GlobalKeys::instance().install();
@@ -163,9 +138,13 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
         playlist = nlohmann::json::array();
     }
 
+    if (UseSystemTray) {
+        setupSystemTray();
+    }
+
+
     SetupUIElements();
     SetupQtActions();
-    setupSystemTray();
     m_updateTimer = new QTimer(this);
 }
 

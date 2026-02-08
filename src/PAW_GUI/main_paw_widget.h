@@ -36,13 +36,13 @@ public:
     void start_playback(const QString &filename);
 
     bool CanAutoSwitch = true;
+    bool UseSystemTray = false;
 
     
     PortaudioThread& getAudioThread() { return *m_audiothread; }
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
 
 private slots:
    

@@ -13,7 +13,6 @@ public:
         setAutoRelaySignals(true);
     }
 
-    // Stub properties (Required so Linux doesn't ignore us)
     Q_PROPERTY(bool CanControl READ canControl)
         Q_PROPERTY(bool CanGoNext READ canControl)
         Q_PROPERTY(bool CanGoPrevious READ canControl)
@@ -23,13 +22,11 @@ public:
         bool canControl() const { return true; }
 
 public slots:
-    // These methods match the MPRIS spec exactly
     void PlayPause() { emit playPauseRequested(); }
     void Next() { emit nextRequested(); }
     void Previous() { emit previousRequested(); }
     void Stop() { emit stopRequested(); }
 
-    // Stubs
     void OpenUri(QString) {}
     void Seek(qlonglong) {}
     void SetPosition(QDBusObjectPath, qlonglong) {}
