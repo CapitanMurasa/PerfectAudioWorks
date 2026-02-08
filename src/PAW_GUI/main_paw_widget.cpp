@@ -492,7 +492,7 @@ void Main_PAW_widget::ProcessFilesList(const QString& file) {
     if (metadata_result == 0) {
         QString title = (strlen(filemetadata.title) > 0) ? QString::fromUtf8(filemetadata.title) : QFileInfo(file).fileName();
         QString artist = (strlen(filemetadata.artist) > 0) ? QString::fromUtf8(filemetadata.artist) : "";
-        displayText = artist.isEmpty() ? title : title + " - " + artist;
+        displayText = artist.isEmpty() ? title : artist + " - " + title;
         FileInfo_cleanup(&filemetadata);
     }
     else {
