@@ -1,23 +1,18 @@
 cmake_minimum_required(VERSION 3.10)
 project(PerfectAudioWorks VERSION 0.1.1 LANGUAGES CXX C)
 
-# --- Compiler Settings ---
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# --- Qt Setup ---
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets DBus Network)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
-# --- Decoders Options ---
 option(ENABLE_FFMPEG "Enable FFmpeg support (Recommended)" ON)
-
 option(ENABLE_SNDFILE "Enable libsndfile support" ON)
 option(ENABLE_MPG123 "Enable mpg123 support" ON)
 
-# --- Source Files ---
 set(SOURCES
     src/main.cpp
     src/assets/resources.rc
@@ -29,8 +24,7 @@ set(SOURCES
     src/miscellaneous/file.cpp 
     src/miscellaneous/json.cpp
     src/miscellaneous/misc.c
-
-    # GUI Files
+    
     src/PAW_GUI/about_paw_gui.ui
     src/PAW_GUI/about_paw_gui.cpp
     src/PAW_GUI/aboutfile_paw_gui.ui
@@ -40,14 +34,12 @@ set(SOURCES
     src/PAW_GUI/main_paw_widget.ui
     src/PAW_GUI/main_paw_widget.cpp
     
-    # Scrolling Label components
     src/PAW_GUI/ScrollingLabel.h
     src/PAW_GUI/ScrollingLabel.cpp
 
     src/PAW_GUI/GlobalLinuxKeys.h
 )
 
-# --- Executable Definition ---
 if(WIN32)
     add_executable(PAW WIN32 ${SOURCES})
 else()
@@ -60,9 +52,7 @@ target_include_directories(PAW PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/miscellaneous
 )
 
-# --- Dependencies Setup ---
 
-# 1. PortAudio
 find_path(PORTAUDIO_INCLUDE_DIR portaudio.h)
 find_library(PORTAUDIO_LIB NAMES portaudio)
 if(PORTAUDIO_INCLUDE_DIR AND PORTAUDIO_LIB)
@@ -72,26 +62,21 @@ else()
     message(FATAL_ERROR "PortAudio not found.")
 endif()
 
-# --- FFmpeg Configuration ---
 if(ENABLE_FFMPEG)
-    
     if(WIN32)
         get_filename_component(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/extern/ffmpeg_minimal" ABSOLUTE)
         set(LIB_SUFFIX ".lib")
         set(BIN_SUFFIX ".dll")
-        set(LIB_PREFIX "")     
+        set(LIB_PREFIX "")      
     elseif(UNIX)
         get_filename_component(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/extern/ffmpeg_minimal_linux" ABSOLUTE)
         set(LIB_SUFFIX ".so")
         set(BIN_SUFFIX ".so")   
-        set(LIB_PREFIX "lib")  
+        set(LIB_PREFIX "lib")   
     endif()
 
-    message(STATUS "Using Custom FFmpeg from: ${FFMPEG_ROOT}")
-    
     macro(setup_ffmpeg_target name version)
         add_library(FFmpeg::${name} SHARED IMPORTED)
-        
         if(WIN32)
             set_target_properties(FFmpeg::${name} PROPERTIES
                 IMPORTED_IMPLIB "${FFMPEG_ROOT}/bin/${name}${LIB_SUFFIX}"
@@ -99,7 +84,6 @@ if(ENABLE_FFMPEG)
                 INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
             )
         else()
-
             set_target_properties(FFmpeg::${name} PROPERTIES
                 IMPORTED_LOCATION "${FFMPEG_ROOT}/lib/${LIB_PREFIX}${name}${LIB_SUFFIX}"
                 INTERFACE_INCLUDE_DIRECTORIES "${FFMPEG_ROOT}/include"
@@ -107,30 +91,18 @@ if(ENABLE_FFMPEG)
         endif()
     endmacro()
 
-
     setup_ffmpeg_target(avcodec    62) 
     setup_ffmpeg_target(avformat   62)
     setup_ffmpeg_target(avutil     60)
     setup_ffmpeg_target(swresample 6)
 
-
     target_compile_definitions(PAW PRIVATE ENABLE_FFMPEG)
     target_sources(PAW PRIVATE src/AudioPharser/ffmpegdecoder.c)
-    target_link_libraries(PAW PRIVATE 
-        FFmpeg::avcodec 
-        FFmpeg::avformat 
-        FFmpeg::avutil 
-        FFmpeg::swresample
-    )
+    target_link_libraries(PAW PRIVATE FFmpeg::avcodec FFmpeg::avformat FFmpeg::avutil FFmpeg::swresample)
     
-
     if(UNIX)
-        install(DIRECTORY "${FFMPEG_ROOT}/lib/" 
-                DESTINATION lib 
-                FILES_MATCHING PATTERN "*.so*"
-        )
+        install(DIRECTORY "${FFMPEG_ROOT}/lib/" DESTINATION lib FILES_MATCHING PATTERN "*.so*")
     endif()
-
 endif()
 
 set(TAGLIB_DIR "${CMAKE_SOURCE_DIR}/extern/taglib")
@@ -153,7 +125,23 @@ else()
     message(FATAL_ERROR "nlohmann_json source not found.")
 endif()
 
-# 5. Optional Legacy Decoders
+set(PYBIND11_DIR "${CMAKE_SOURCE_DIR}/extern/pybind11")
+
+if(EXISTS ${PYBIND11_DIR}/CMakeLists.txt)
+    add_subdirectory(${PYBIND11_DIR})
+    
+    pybind11_add_module(PAW_python src/miscellaneous/python_bindings.cpp) 
+    
+    target_link_libraries(PAW_python PRIVATE Qt6::Core ${PORTAUDIO_TARGET})
+    
+    target_include_directories(PAW_python PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/AudioPharser
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/miscellaneous
+    )
+else()
+    message(WARNING "Pybind11 submodule not found.")
+endif()
+
 if(ENABLE_SNDFILE)
     find_path(SNDFILE_INCLUDE_DIR sndfile.h)
     find_library(SNDFILE_LIB NAMES sndfile)
@@ -176,12 +164,8 @@ if(ENABLE_MPG123)
     endif()
 endif()
 
-# --- Linking ---
 target_link_libraries(PAW PRIVATE
-    Qt6::Core
-    Qt6::Widgets
-    Qt6::DBus
-    Qt6::Network
+    Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Network
     ${PORTAUDIO_TARGET}
     ${TAGLIB_TARGET}
     nlohmann_json::nlohmann_json  
@@ -194,37 +178,33 @@ if (WIN32)
     endif()
 endif()
 
-include(GNUInstallDirs)
+if(TARGET PAW_python)
+    set_target_properties(PAW_python PROPERTIES 
+        PREFIX ""
+        SUFFIX ".pyd"
+        OUTPUT_NAME "PAW_python"
+    )
+    
+    add_dependencies(PAW PAW_python)
+endif()
 
+include(GNUInstallDirs)
 install(TARGETS PAW RUNTIME DESTINATION bin)
 
 if(WIN32)
     set(KNOWN_GOOD_BIN_DIR "${CMAKE_SOURCE_DIR}/out/install/Mingw64-Release/bin")
-
-    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/"
-        DESTINATION bin
-        FILES_MATCHING PATTERN "*.dll"
-    )
-    
+    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/" DESTINATION bin FILES_MATCHING PATTERN "*.dll")
     install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/platforms" DESTINATION bin)
-    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/styles"    DESTINATION bin)
+    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/styles" DESTINATION bin)
     install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/imageformats" DESTINATION bin)
-
 endif()
 
 if(UNIX AND NOT APPLE)
     install(FILES "${CMAKE_SOURCE_DIR}/paw.desktop" DESTINATION share/applications)
-    
-    install(FILES "${CMAKE_SOURCE_DIR}/src/assets/icon_64.png" 
-            DESTINATION share/icons/hicolor/64x64/apps 
-            RENAME paw.png)
-            
-    install(FILES "${CMAKE_SOURCE_DIR}/src/assets/icon_256.png" 
-            DESTINATION share/icons/hicolor/256x256/apps 
-            RENAME paw.png)
+    install(FILES "${CMAKE_SOURCE_DIR}/src/assets/icon_64.png" DESTINATION share/icons/hicolor/64x64/apps RENAME paw.png)
+    install(FILES "${CMAKE_SOURCE_DIR}/src/assets/icon_256.png" DESTINATION share/icons/hicolor/256x256/apps RENAME paw.png)
 endif()
 
-# --- NSIS Installer ---
 set(CPACK_PACKAGE_NAME "PerfectAudioWorks")
 set(CPACK_PACKAGE_VENDOR "CapitanMurasa")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
@@ -239,22 +219,9 @@ if(WIN32)
     set(CPACK_GENERATOR "NSIS")
     set(CPACK_NSIS_DISPLAY_NAME "PerfectAudioWorks")
     set(CPACK_NSIS_PACKAGE_NAME "PerfectAudioWorks ${PROJECT_VERSION}")
-    set(CPACK_NSIS_LICENSE_PAGE_HEADER "PerfectAudioWorks License Agreement")
-    
-    set(CPACK_NSIS_CREATE_ICONS_EXTRA "
-        CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'
-    ")
-    
-    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
-        CreateShortCut '$DESKTOP\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'
-    ")
-    
-    set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
-        Delete '$DESKTOP\\\\PerfectAudioWorks.lnk'
-        Delete '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\PerfectAudioWorks.lnk'
-    ")
-    
-
+    set(CPACK_NSIS_CREATE_ICONS_EXTRA "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'")
+    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "CreateShortCut '$DESKTOP\\\\PerfectAudioWorks.lnk' '$INSTDIR\\\\bin\\\\PAW.exe'")
+    set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "Delete '$DESKTOP\\\\PerfectAudioWorks.lnk' Delete '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\PerfectAudioWorks.lnk'")
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -263,8 +230,6 @@ if(UNIX AND NOT APPLE)
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON) 
     set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "CapitanMurasa vladislavkolodiy45@gmail.com")
-
-
     set(CPACK_PACKAGE_VENDOR "CapitanMurasa")
     set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/CapitanMurasa/PerfectAudioWorks")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE") 

@@ -39,6 +39,8 @@ public:
     void StopPlayback();
     void PlayPauseButton();
 
+    QString m_currentFile;
+
     bool CanAutoSwitch = true;
 
     
@@ -72,7 +74,6 @@ private:
     QTimer *m_updateTimer; 
     QAction *m_deleteAction;
     PortaudioThread* m_audiothread; 
-    QString m_currentFile; 
     FileInfo filemetadata;
     QListWidgetItem* currentItemPlaying;
     QPixmap m_originalAlbumArt;      
