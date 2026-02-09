@@ -25,6 +25,8 @@ public:
     QList<QPair<QString, int>> GetAllAvailableOutputDevices();
     void stop();
     void changeAudioDevice(int newDeviceID);
+    bool m_isPaused;
+    bool m_isRunning;
 
 
 signals:
@@ -40,8 +42,6 @@ private:
     QString m_filename;
     int audiodevice;
     AudioPlayer m_player;
-    bool m_isPaused;
-    bool m_isRunning;
     std::atomic<bool> m_stopRequested;
 
 

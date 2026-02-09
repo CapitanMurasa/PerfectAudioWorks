@@ -1,13 +1,15 @@
-#ifndef Settings_PAW_gui_H
-#define Settings_PAW_gui_H
+#ifndef SETTINGS_PAW_GUI_H
+#define SETTINGS_PAW_GUI_H
 
-#include <QMainWindow>
+#include <QDialog>  
 #include <QDebug>
 #include <QComboBox> 
 
 #include "../AudioPharser/PortAudioHandler.h" 
-#include "main_paw_widget.h"
 #include "../miscellaneous/json.h"
+
+
+class Main_PAW_widget;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -15,31 +17,36 @@ namespace Ui {
 }
 QT_END_NAMESPACE
 
-class Main_PAW_widget;
-
-class Settings_PAW_gui : public QMainWindow
+class Settings_PAW_gui : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit Settings_PAW_gui(PortaudioThread* audioThread, QWidget* parent = nullptr);
+    explicit Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget* parent = nullptr);
     ~Settings_PAW_gui() override;
+
     json settings;
+
+    json pluginsList;
 
 private slots:
     void applySettings();
-    void applySettingsandExit();
+    void addplugins();
 
 
 private:
     Ui::Settings_PAW_gui* ui;
     PortaudioThread* m_audiothread;
+
     Main_PAW_widget* mainwidget;
+
     JsonLoader loader;
 
     void SetupJson();
 
+    void addPluginsfromJson();
 
+    bool ProcessPlugin(const QString& file);
 };
 
-#endif
+#endif 

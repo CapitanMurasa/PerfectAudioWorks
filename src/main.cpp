@@ -1,3 +1,6 @@
+#include <pybind11/embed.h> 
+#include "python_bindings.h"
+
 #include "PAW_GUI/main_paw_widget.h"
 #include <QApplication>
 #include <QIcon>
@@ -7,6 +10,11 @@
 #include <QMessageBox>
 #include <QLocalServer> 
 #include <QLocalSocket>  
+
+namespace py = pybind11;
+
+Main_PAW_widget* global_paw_widget = nullptr;
+PortaudioThread* global_audiothread = nullptr;
 
 #ifdef Q_OS_LINUX
 #include "PAW_GUI/GlobalLinuxKeys.h"
@@ -23,7 +31,6 @@ int main(int argc, char* argv[]) {
 
     QLockFile lockFile(lockPath);
 
-
     if (!lockFile.tryLock(100)) {
         QLocalSocket socket;
         socket.connectToServer(serverName);
@@ -37,18 +44,29 @@ int main(int argc, char* argv[]) {
             }
         }
         else {
-
             QMessageBox::warning(nullptr, "PAW GUI", "Application is already running, but not responding.");
         }
-        return 0;
+        return 0; 
     }
 
-    QLocalServer::removeServer(serverName);
 
+
+
+    py::scoped_interpreter guard{};
+
+    QLocalServer::removeServer(serverName);
     QLocalServer server;
+
     Main_PAW_widget w;
+
+    global_paw_widget = &w;
+    global_audiothread = &w.getAudioThread();
+
     QObject::connect(&server, &QLocalServer::newConnection, [&server, &w]() {
         QLocalSocket* clientConnection = server.nextPendingConnection();
+
+        QObject::connect(clientConnection, &QLocalSocket::disconnected,
+            clientConnection, &QLocalSocket::deleteLater);
 
         QObject::connect(clientConnection, &QLocalSocket::readyRead, [clientConnection, &w]() {
             QByteArray data = clientConnection->readAll();
@@ -60,7 +78,6 @@ int main(int argc, char* argv[]) {
                 w.show();
                 w.raise();
                 w.activateWindow();
-
                 w.start_playback(filePath);
             }
             });
@@ -68,6 +85,18 @@ int main(int argc, char* argv[]) {
 
     if (!server.listen(serverName)) {
         qWarning() << "Unable to start local server:" << server.errorString();
+    }
+
+    try {
+        py::module_ sys = py::module_::import("sys");
+        sys.attr("path").attr("append")("."); 
+
+        py::module_ my_module = py::module_::import("PAW_python");
+        qDebug() << "Python Plugin loaded successfully.";
+
+    }
+    catch (const std::exception& e) {
+        qCritical() << "Failed to load Python plugin:" << e.what();
     }
 
 
@@ -102,6 +131,7 @@ int main(int argc, char* argv[]) {
 
     QObject::connect(&a, &QCoreApplication::aboutToQuit, [&w]() {
         w.getAudioThread().stopPlayback();
+        global_paw_widget = nullptr;
         });
 
     int result = a.exec();

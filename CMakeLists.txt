@@ -9,6 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
 option(ENABLE_FFMPEG "Enable FFmpeg support (Recommended)" ON)
 option(ENABLE_SNDFILE "Enable libsndfile support" ON)
 option(ENABLE_MPG123 "Enable mpg123 support" ON)
@@ -37,11 +39,13 @@ set(SOURCES
     src/PAW_GUI/ScrollingLabel.h
     src/PAW_GUI/ScrollingLabel.cpp
 
+    src/miscellaneous/python_bindings.cpp
+
     src/PAW_GUI/GlobalLinuxKeys.h
 )
 
 if(WIN32)
-    add_executable(PAW WIN32 ${SOURCES})
+    add_executable(PAW ${SOURCES})
 else()
     add_executable(PAW ${SOURCES})
 endif()
@@ -125,19 +129,14 @@ else()
     message(FATAL_ERROR "nlohmann_json source not found.")
 endif()
 
+
 set(PYBIND11_DIR "${CMAKE_SOURCE_DIR}/extern/pybind11")
 
 if(EXISTS ${PYBIND11_DIR}/CMakeLists.txt)
     add_subdirectory(${PYBIND11_DIR})
     
-    pybind11_add_module(PAW_python src/miscellaneous/python_bindings.cpp) 
+    target_link_libraries(PAW PRIVATE pybind11::embed)
     
-    target_link_libraries(PAW_python PRIVATE Qt6::Core ${PORTAUDIO_TARGET})
-    
-    target_include_directories(PAW_python PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/AudioPharser
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/miscellaneous
-    )
 else()
     message(WARNING "Pybind11 submodule not found.")
 endif()
@@ -165,7 +164,12 @@ if(ENABLE_MPG123)
 endif()
 
 target_link_libraries(PAW PRIVATE
-    Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Network
+    Qt6::Core 
+    Qt6::Widgets 
+    Qt6::DBus 
+    Qt6::Network
+    pybind11::embed
+    Python3::Python      
     ${PORTAUDIO_TARGET}
     ${TAGLIB_TARGET}
     nlohmann_json::nlohmann_json  
