@@ -43,6 +43,8 @@ set(SOURCES
     # Scrolling Label components
     src/PAW_GUI/ScrollingLabel.h
     src/PAW_GUI/ScrollingLabel.cpp
+
+    src/PAW_GUI/GlobalLinuxKeys.h
 )
 
 # --- Executable Definition ---
