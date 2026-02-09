@@ -39,6 +39,10 @@ public:
     void StopPlayback();
     void PlayPauseButton();
 
+    FileInfo file_info;
+
+    QString returnTimeElapsed();
+    QString returnTimeStamp();
     QString m_currentFile;
 
     bool CanAutoSwitch = true;
@@ -82,6 +86,8 @@ private:
     About_PAW_gui *about;
     JsonLoader loader;
     QSystemTrayIcon *trayIcon;
+    float currentDuration;
+    float totalDuration;
 
     QString floatToMMSS(float totalSeconds);
     void updateAlbumArt();

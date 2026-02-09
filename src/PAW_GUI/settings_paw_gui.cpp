@@ -125,16 +125,15 @@ void Settings_PAW_gui::addplugins() {
         bool success = ProcessPlugin(file);
 
         if (success) {
-            QFileInfo fi(file);
-            std::string stdName = fi.fileName().toStdString();
+            std::string stdPath = QFileInfo(file).absoluteFilePath().toStdString();
 
             bool exists = false;
             for (const auto& item : pluginsList) {
-                if (item.get<std::string>() == stdName) { exists = true; break; }
+                if (item.get<std::string>() == stdPath) { exists = true; break; }
             }
 
             if (!exists) {
-                pluginsList.push_back(stdName);
+                pluginsList.push_back(stdPath);
                 listChanged = true;
             }
         }
@@ -150,11 +149,9 @@ void Settings_PAW_gui::addPluginsfromJson() {
 
     if (pluginsList.is_array()) {
         for (const auto& item : pluginsList) {
-            QString fileName = QString::fromStdString(item.get<std::string>());
+            QString filePath = QString::fromStdString(item.get<std::string>());
 
-            QString localPath = QCoreApplication::applicationDirPath() + "/plugins/" + fileName;
-
-            ProcessPlugin(localPath);
+            ProcessPlugin(filePath);
         }
     }
 }
@@ -165,47 +162,37 @@ bool Settings_PAW_gui::ProcessPlugin(const QString& filePath) {
 
     QString fileName = fileInfo.fileName();
     QString moduleName = fileInfo.completeBaseName(); 
-
-    QString appPath = QCoreApplication::applicationDirPath();
-    QDir pluginsDir(appPath + "/plugins");
-    if (!pluginsDir.exists()) pluginsDir.mkpath(".");
-
-    QString destPath = pluginsDir.filePath(fileName);
-    if (QFileInfo(filePath).absoluteFilePath() != QFileInfo(destPath).absoluteFilePath()) {
-        if (QFile::exists(destPath)) QFile::remove(destPath);
-
-        if (!QFile::copy(filePath, destPath)) {
-            QMessageBox::warning(this, "Error", "Could not copy plugin to plugins folder.");
-            return false;
-        }
-    }
+    QString dirPath = fileInfo.absolutePath(); 
 
     try {
+        py::gil_scoped_acquire acquire;
+
         py::module_ sys = py::module_::import("sys");
-        std::string stdPluginsPath = pluginsDir.absolutePath().toStdString();
+        std::string stdDirPath = dirPath.toStdString();
 
         bool inPath = false;
         for (auto p : sys.attr("path")) {
-            if (p.cast<std::string>() == stdPluginsPath) { inPath = true; break; }
+            if (p.cast<std::string>() == stdDirPath) { inPath = true; break; }
         }
-        if (!inPath) sys.attr("path").attr("append")(stdPluginsPath);
+        if (!inPath) sys.attr("path").attr("append")(stdDirPath);
 
         py::module_ mod = py::module_::import(moduleName.toStdString().c_str());
 
         py::module_ importlib = py::module_::import("importlib");
         importlib.attr("reload")(mod);
 
-        qDebug() << "Loaded Plugin:" << moduleName;
-
+        qDebug() << "Loaded Plugin:" << moduleName << "from" << dirPath;
 
         bool inUi = false;
         for (int i = 0; i < ui->PluginsList->count(); ++i) {
-            if (ui->PluginsList->item(i)->text() == fileName) { inUi = true; break; }
+            QString storedPath = ui->PluginsList->item(i)->data(Qt::UserRole).toString();
+            if (storedPath == fileInfo.absoluteFilePath()) { inUi = true; break; }
         }
 
         if (!inUi) {
             QListWidgetItem* item = new QListWidgetItem(fileName);
-            item->setData(Qt::UserRole, destPath); 
+            item->setData(Qt::UserRole, fileInfo.absoluteFilePath());
+            item->setToolTip(fileInfo.absoluteFilePath());
             ui->PluginsList->addItem(item);
         }
 

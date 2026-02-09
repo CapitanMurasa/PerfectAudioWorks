@@ -246,43 +246,43 @@ void Main_PAW_widget::startPendingTrack() {
 void Main_PAW_widget::LoadMetadatafromfile() {
     QString filename = m_currentFile;
 
-    FileInfo filemetadata = { 0 };
+    file_info = { 0 };
     int metadata_result = -1;
 
 #ifdef _WIN32
     std::wstring w_filePath = filename.toStdWString();
-    metadata_result = get_metadata_w(w_filePath.c_str(), &filemetadata);
+    metadata_result = get_metadata_w(w_filePath.c_str(), &file_info);
 #else
     QByteArray utf8_filePath = filename.toUtf8();
-    metadata_result = get_metadata(utf8_filePath.constData(), &filemetadata);
+    metadata_result = get_metadata(utf8_filePath.constData(), &file_info);
 #endif
 
     if (metadata_result == 0) {
         QPixmap coverArt;
         bool artFound = false;
 
-        QString title = (filemetadata.title && strlen(filemetadata.title) > 0)
-            ? QString::fromUtf8(filemetadata.title)
+        QString title = (file_info.title && strlen(file_info.title) > 0)
+            ? QString::fromUtf8(file_info.title)
             : filename.section('/', -1);
 
-        QString artist = (filemetadata.artist && strlen(filemetadata.artist) > 0)
-            ? QString::fromUtf8(filemetadata.artist)
+        QString artist = (file_info.artist && strlen(file_info.artist) > 0)
+            ? QString::fromUtf8(file_info.artist)
             : "";
 
-        if (filemetadata.cover_image && filemetadata.cover_size > 0) {
-            if (coverArt.loadFromData(filemetadata.cover_image, filemetadata.cover_size)) {
+        if (file_info.cover_image && file_info.cover_size > 0) {
+            if (coverArt.loadFromData(file_info.cover_image, file_info.cover_size)) {
                 artFound = true;
             }
         }
 
-        if (filemetadata.bitrate > 0) {
-            ui->BitrateInfo->setText(QString::number(filemetadata.bitrate) + " kbps");
+        if (file_info.bitrate > 0) {
+            ui->BitrateInfo->setText(QString::number(file_info.bitrate) + " kbps");
         }
         else {
             ui->BitrateInfo->setText("");
         }
 
-        FileInfo_cleanup(&filemetadata);
+        FileInfo_cleanup(&file_info);
 
         m_originalAlbumArt = artFound ? coverArt : QPixmap();
         this->setWindowTitle(artist + " - " + title);
@@ -323,7 +323,7 @@ void Main_PAW_widget::resizeEvent(QResizeEvent* event)
 void Main_PAW_widget::handlePlaybackProgress(int currentFrame, int totalFrames, int sampleRate) {
     if (totalFrames > 0 && sampleRate > 0) {
         float framesInPercentage = (currentFrame * 1.0f) / totalFrames * 100.0f;
-        float currentDuration = (currentFrame * 1.0f) / sampleRate;
+        currentDuration = (currentFrame * 1.0f) / sampleRate;
 
         bool oldBlockState = ui->TimelineSlider->blockSignals(true);
         ui->TimelineSlider->setValue(static_cast<float>(framesInPercentage));
@@ -334,7 +334,7 @@ void Main_PAW_widget::handlePlaybackProgress(int currentFrame, int totalFrames, 
 
 void Main_PAW_widget::handleTotalFileInfo(int totalFrames, int channels, int sampleRate, const char* codecname) {
     if (totalFrames > 0 && sampleRate > 0) {
-        float totalDuration = (totalFrames * 1.0f) / sampleRate;
+        totalDuration = (totalFrames * 1.0f) / sampleRate;
         ui->TotalFileDuration->setText(floatToMMSS(totalDuration));
         ui->SampleRateinfo->setText(QString::number(sampleRate));
         ui->CodecProcessorinfo->setText(QString::fromUtf8(codecname));
@@ -507,17 +507,17 @@ void Main_PAW_widget::ProcessFilesList(const QString& file) {
 
 #ifdef _WIN32
     std::wstring w_filePath = file.toStdWString();
-    metadata_result = get_metadata_w(w_filePath.c_str(), &filemetadata);
+    metadata_result = get_metadata_w(w_filePath.c_str(), &file_info);
 #else
     QByteArray utf8_filePath = file.toUtf8();
-    metadata_result = get_metadata(utf8_filePath.constData(), &filemetadata);
+    metadata_result = get_metadata(utf8_filePath.constData(), &file_info);
 #endif
 
     if (metadata_result == 0) {
-        QString title = (strlen(filemetadata.title) > 0) ? QString::fromUtf8(filemetadata.title) : QFileInfo(file).fileName();
-        QString artist = (strlen(filemetadata.artist) > 0) ? QString::fromUtf8(filemetadata.artist) : "";
+        QString title = (strlen(file_info.title) > 0) ? QString::fromUtf8(file_info.title) : QFileInfo(file).fileName();
+        QString artist = (strlen(file_info.artist) > 0) ? QString::fromUtf8(file_info.artist) : "";
         displayText = artist.isEmpty() ? title : artist + " - " + title;
-        FileInfo_cleanup(&filemetadata);
+        FileInfo_cleanup(&file_info);
     }
     else {
         displayText = QFileInfo(file).fileName();
@@ -669,6 +669,14 @@ QString Main_PAW_widget::returnItemPath() {
     if (!item) return QString();
     QString filepath = item->data(Qt::UserRole).toString();
     return filepath;
+}
+
+QString Main_PAW_widget::returnTimeElapsed() {
+    return floatToMMSS(currentDuration);
+}
+
+QString Main_PAW_widget::returnTimeStamp() {
+    return floatToMMSS(totalDuration);
 }
 
 QString Main_PAW_widget::floatToMMSS(float totalSeconds) {
