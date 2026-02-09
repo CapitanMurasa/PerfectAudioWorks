@@ -59,31 +59,6 @@ void Main_PAW_widget::SetupQtActions() {
     ui->Playlist->addAction(m_deleteAction);
 }
 
-void Main_PAW_widget::setupSystemTray() {
-    trayIcon = new QSystemTrayIcon(this);
-    trayIcon->setIcon(QIcon(":/assets/paw.ico")); 
-
-    QMenu* trayMenu = new QMenu(this);
-
-    QAction* playAction = trayMenu->addAction("Play/Pause");
-    connect(playAction, &QAction::triggered, this, &Main_PAW_widget::PlayPauseButton);
-
-    QAction* nextAction = trayMenu->addAction("Next");
-    connect(nextAction, &QAction::triggered, this, &Main_PAW_widget::PlayNextItem);
-
-    QAction* quitAction = trayMenu->addAction("Quit");
-    connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
-
-    trayIcon->setContextMenu(trayMenu);
-    trayIcon->show();
-
-    connect(trayIcon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
-        if (reason == QSystemTrayIcon::DoubleClick) {
-            this->show();
-            this->raise();
-        }
-        });
-}
 
 Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     : QMainWindow(parent)
@@ -107,7 +82,6 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
 
     saveplaylist = settings.value("save_playlists", true);
     CanAutoSwitch = settings.value("auto_skip_tracks", true);
-    UseSystemTray = settings.value("use_system_tray", true);
 
 #ifdef _WIN32
     GlobalKeys::instance().install();
@@ -136,10 +110,6 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     }
     else {
         playlist = nlohmann::json::array();
-    }
-
-    if (UseSystemTray) {
-        setupSystemTray();
     }
 
 

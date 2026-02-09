@@ -40,7 +40,6 @@ public:
     void PlayPauseButton();
 
     bool CanAutoSwitch = true;
-    bool UseSystemTray = false;
 
     
     PortaudioThread& getAudioThread() { return *m_audiothread; }
@@ -93,7 +92,6 @@ private:
     void ProcessFilesList(const QString& file);
     void addFilesToPlaylistfromJson();
     void ClearUi();
-    void setupSystemTray();
 
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;

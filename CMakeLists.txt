@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # --- Qt Setup ---
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets DBus)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets DBus Network)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -181,6 +181,7 @@ target_link_libraries(PAW PRIVATE
     Qt6::Core
     Qt6::Widgets
     Qt6::DBus
+    Qt6::Network
     ${PORTAUDIO_TARGET}
     ${TAGLIB_TARGET}
     nlohmann_json::nlohmann_json  
