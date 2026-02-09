@@ -2,7 +2,6 @@
 #include "ui_main_paw_widget.h"
 #include "aboutfile_paw_gui.h"
 #include "Proxy_style.h"
-#include "GlobalKeys.h"
 
 #include <cmath> 
 #include <string>
@@ -17,6 +16,7 @@
 #include <QDropEvent>
 #include <QMimeData>
 #if _WIN32
+#include "GlobalKeys.h"
 #include <windows.h>
 #endif
 

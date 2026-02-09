@@ -34,6 +34,10 @@ public:
     explicit Main_PAW_widget(QWidget *parent = nullptr); 
     ~Main_PAW_widget() override; 
     void start_playback(const QString &filename);
+    void PlayPreviousItem();
+    void PlayNextItem();
+    void StopPlayback();
+    void PlayPauseButton();
 
     bool CanAutoSwitch = true;
     bool UseSystemTray = false;
@@ -48,11 +52,7 @@ private slots:
    
     void on_actionopen_file_triggered();
     void onSliderValueChanged(float value);
-    void PlayPauseButton();
     void addFilesToPlaylist();
-    void StopPlayback();
-    void PlayPreviousItem();
-    void PlayNextItem();
     void showPlaylistContextMenu(const QPoint &pos);
     void playSelectedItem();
     void deleteSelectedItem();

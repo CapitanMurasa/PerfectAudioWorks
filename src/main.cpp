@@ -4,7 +4,9 @@
 #include <QIcon>
 #include <QDebug>
 
+#ifdef Q_OS_LINUX
 #include "PAW_GUI/GlobalLinuxKeys.h"
+#endif
 
 int main(int argc, char* argv[]) {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -29,10 +31,10 @@ int main(int argc, char* argv[]) {
 #ifdef Q_OS_LINUX
     LinuxKeys* keys = new LinuxKeys(&w);
 
-    QObject::connect(keys, &LinuxKeys::playPauseRequested, &w, &MainWindow::togglePlayback);
-    QObject::connect(keys, &LinuxKeys::nextRequested, &w, &MainWindow::playNextSong);
-    QObject::connect(keys, &LinuxKeys::previousRequested, &w, &MainWindow::playPreviousSong);
-    QObject::connect(keys, &LinuxKeys::stopRequested, &w, &MainWindow::stopPlayback);
+    QObject::connect(keys, &LinuxKeys::playPauseRequested, &w, &Main_PAW_widget::PlayPauseButton);
+    QObject::connect(keys, &LinuxKeys::nextRequested, &w, &Main_PAW_widget::PlayNextItem);
+    QObject::connect(keys, &LinuxKeys::previousRequested, &w, &Main_PAW_widget::PlayPreviousItem);
+    QObject::connect(keys, &LinuxKeys::stopRequested, &w, &Main_PAW_widget::StopPlayback);
 
     QDBusConnection bus = QDBusConnection::sessionBus();
     bus.registerService("org.mpris.MediaPlayer2.perfectaudioworks");
