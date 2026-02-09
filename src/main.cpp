@@ -3,6 +3,9 @@
 #include <QApplication>
 #include <QIcon>
 #include <QDebug>
+#include <QSharedMemory>
+#include <QSystemSemaphore>
+#include <QMessageBox>
 
 #ifdef Q_OS_LINUX
 #include "PAW_GUI/GlobalLinuxKeys.h"
