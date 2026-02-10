@@ -40,6 +40,7 @@ set(SOURCES
     src/PAW_GUI/ScrollingLabel.cpp
 
     src/miscellaneous/python_bindings.cpp
+    src/miscellaneous/PythonEvent.cpp
 
     src/PAW_GUI/GlobalLinuxKeys.h
 )

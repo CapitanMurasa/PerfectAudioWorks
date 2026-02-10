@@ -7,6 +7,7 @@
 
 #include "../AudioPharser/PortAudioHandler.h" 
 #include "../miscellaneous/json.h"
+#include "../miscellaneous/PythonEvent.h"
 
 
 class Main_PAW_widget;
@@ -37,6 +38,8 @@ private slots:
 private:
     Ui::Settings_PAW_gui* ui;
     PortaudioThread* m_audiothread;
+
+    PythonEventThread* pythread;
 
     Main_PAW_widget* mainwidget;
 

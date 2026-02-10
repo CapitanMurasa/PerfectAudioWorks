@@ -1,5 +1,3 @@
-#include <pybind11/embed.h>
-
 #include "settings_paw_gui.h"
 #include "ui_settings_paw_gui.h"
 #include "main_paw_widget.h"
@@ -21,6 +19,8 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
     , mainwidget(parent)
 {
     ui->setupUi(this);
+
+    pythread = new PythonEventThread(audioThread);
 
     connect(ui->settingsMenu, &QListWidget::currentRowChanged,
         ui->settingsStack, &QStackedWidget::setCurrentIndex);
@@ -164,26 +164,9 @@ bool Settings_PAW_gui::ProcessPlugin(const QString& filePath) {
     QString moduleName = fileInfo.completeBaseName(); 
     QString dirPath = fileInfo.absolutePath(); 
 
-    try {
-        py::gil_scoped_acquire acquire;
 
-        py::module_ sys = py::module_::import("sys");
-        std::string stdDirPath = dirPath.toStdString();
 
-        bool inPath = false;
-        for (auto p : sys.attr("path")) {
-            if (p.cast<std::string>() == stdDirPath) { inPath = true; break; }
-        }
-        if (!inPath) sys.attr("path").attr("append")(stdDirPath);
-
-        py::module_ mod = py::module_::import(moduleName.toStdString().c_str());
-
-        py::module_ importlib = py::module_::import("importlib");
-        importlib.attr("reload")(mod);
-
-        qDebug() << "Loaded Plugin:" << moduleName << "from" << dirPath;
-
-        bool inUi = false;
+        bool inUi = pythread->openPlugin(filePath);
         for (int i = 0; i < ui->PluginsList->count(); ++i) {
             QString storedPath = ui->PluginsList->item(i)->data(Qt::UserRole).toString();
             if (storedPath == fileInfo.absoluteFilePath()) { inUi = true; break; }
@@ -197,11 +180,4 @@ bool Settings_PAW_gui::ProcessPlugin(const QString& filePath) {
         }
 
         return true;
-
-    }
-    catch (const std::exception& e) {
-        qCritical() << "Python Plugin Error:" << e.what();
-        QMessageBox::critical(this, "Plugin Error", QString("Failed to load %1:\n%2").arg(fileName).arg(e.what()));
-        return false;
-    }
 }
