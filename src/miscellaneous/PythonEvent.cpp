@@ -9,7 +9,6 @@ namespace py = pybind11;
 PythonEventThread::PythonEventThread(PortaudioThread* audioThread, Main_PAW_widget* mainWidget)
     : QObject(nullptr)
 {
-
 }
 
 PythonEventThread::~PythonEventThread() {
@@ -100,6 +99,4 @@ void PythonEventThread::registerCallback(py::function callback, int interval_ms)
 
     cb->timer->start(interval_ms);
     activeCallbacks.push_back(cb);
-
-    qDebug() << "Registered Python Callback with interval:" << interval_ms << "ms";
 }

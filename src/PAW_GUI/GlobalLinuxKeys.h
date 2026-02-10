@@ -1,6 +1,5 @@
-#ifndef LINUXKEYS_H
-#define LINUXKEYS_H
-
+#pragma once
+#ifdef Q_OS_LINUX
 #include <QObject>
 #include <QtDBus>
 
@@ -37,5 +36,4 @@ signals:
     void previousRequested();
     void stopRequested();
 };
-
 #endif

@@ -21,16 +21,12 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
     ui->setupUi(this);
 
     m_pythonThread = new QThread(this);
-
-
     m_pyWorker = new PythonEventThread(audioThread, parent);
 
     global_pyevent = m_pyWorker;
 
-
     m_pyWorker->moveToThread(m_pythonThread);
 
-    connect(m_pythonThread, &QThread::finished, m_pyWorker, &QObject::deleteLater);
 
 
     connect(this, &Settings_PAW_gui::requestLoadPlugin,
@@ -38,7 +34,6 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
 
     connect(m_pyWorker, &PythonEventThread::pluginLoadFinished,
         this, &Settings_PAW_gui::onPluginLoaded);
-
 
     m_pythonThread->start();
 
@@ -60,7 +55,6 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
         qWarning() << "No settings found, starting with defaults.";
     }
 
-
     if (!loader.load_jsonfile(pluginsList, "plugins.json")) {
         pluginsList = nlohmann::json::array();
     }
@@ -74,7 +68,6 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
     }
 
     connect(this, &QDialog::accepted, this, &Settings_PAW_gui::applySettings);
-
 
     if (ui->AddPluginsButton) {
         connect(ui->AddPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::addplugins);
@@ -91,6 +84,14 @@ Settings_PAW_gui::~Settings_PAW_gui()
         m_pythonThread->quit();
         m_pythonThread->wait();
     }
+
+
+    delete m_pyWorker;
+    m_pyWorker = nullptr;
+
+    delete m_pythonThread;
+    m_pythonThread = nullptr;
+
     delete ui;
 }
 
@@ -137,15 +138,11 @@ void Settings_PAW_gui::applySettings() {
     qDebug() << "Settings applied and saved.";
 }
 
-
 void Settings_PAW_gui::addplugins() {
     QStringList files = QFileDialog::getOpenFileNames(this, "Select Python Plugins", "", "Python Files (*.py)");
 
-    bool listChanged = false;
-
     for (const QString& file : files) {
         if (file.isEmpty()) continue;
-
         emit requestLoadPlugin(file);
     }
 }
@@ -156,7 +153,6 @@ void Settings_PAW_gui::addPluginsfromJson() {
     if (pluginsList.is_array()) {
         for (const auto& item : pluginsList) {
             QString filePath = QString::fromStdString(item.get<std::string>());
-
             emit requestLoadPlugin(filePath);
         }
     }
@@ -170,9 +166,13 @@ void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fi
             return;
     }
 
-    QListWidgetItem* item = new QListWidgetItem(fileName);
-    item->setData(Qt::UserRole, filePath);
+    QString displayText = Pluginname.isEmpty() ? fileName : Pluginname;
+
+    QListWidgetItem* item = new QListWidgetItem(displayText);
+
+    item->setData(Qt::UserRole, filePath); 
     item->setToolTip(filePath);
+
     ui->PluginsList->addItem(item);
 
     std::string stdPath = filePath.toStdString();
@@ -180,6 +180,7 @@ void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fi
     for (const auto& item : pluginsList) {
         if (item.get<std::string>() == stdPath) { exists = true; break; }
     }
+
     if (!exists) {
         pluginsList.push_back(stdPath);
         loader.save_config(pluginsList, "plugins.json");

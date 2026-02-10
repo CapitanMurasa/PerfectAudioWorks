@@ -41,6 +41,5 @@ private:
     bool openPluginInternal(const QString& filePath);
 
     QString pluginname;
-
     std::vector<PythonCallback*> activeCallbacks;
 };

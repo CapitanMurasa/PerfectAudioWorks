@@ -4,7 +4,12 @@ project(PerfectAudioWorks VERSION 0.1.1 LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets DBus Network)
+if (UNIX)
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets DBus Network)
+else()
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
+endif()
+
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -164,10 +169,23 @@ if(ENABLE_MPG123)
     endif()
 endif()
 
+
+if (UNIX)
 target_link_libraries(PAW PRIVATE
     Qt6::Core 
     Qt6::Widgets 
+    Qt6::Network
     Qt6::DBus 
+    pybind11::embed
+    Python3::Python      
+    ${PORTAUDIO_TARGET}
+    ${TAGLIB_TARGET}
+    nlohmann_json::nlohmann_json  
+)
+else()
+target_link_libraries(PAW PRIVATE
+    Qt6::Core 
+    Qt6::Widgets 
     Qt6::Network
     pybind11::embed
     Python3::Python      
@@ -175,6 +193,7 @@ target_link_libraries(PAW PRIVATE
     ${TAGLIB_TARGET}
     nlohmann_json::nlohmann_json  
 )
+endif()
 
 if (WIN32)
     target_link_libraries(PAW PRIVATE Ws2_32)
