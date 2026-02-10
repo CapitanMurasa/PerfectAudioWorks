@@ -1,13 +1,16 @@
 #ifndef SETTINGS_PAW_GUI_H
 #define SETTINGS_PAW_GUI_H
 
+#include "../miscellaneous/PythonEvent.h"
+#include "../AudioPharser/PortAudioHandler.h" 
+#include "../miscellaneous/json.h"
+
 #include <QDialog>  
 #include <QDebug>
 #include <QComboBox> 
+#include <QThread>
 
-#include "../AudioPharser/PortAudioHandler.h" 
-#include "../miscellaneous/json.h"
-#include "../miscellaneous/PythonEvent.h"
+
 
 
 class Main_PAW_widget;
@@ -33,15 +36,21 @@ public:
 private slots:
     void applySettings();
     void addplugins();
+    void onPluginLoaded(bool success, QString filePath, QString fileName);
+
+signals:
+    void requestLoadPlugin(QString path);
+
 
 
 private:
     Ui::Settings_PAW_gui* ui;
-    PortaudioThread* m_audiothread;
 
-    PythonEventThread* pythread;
+    QThread* m_pythonThread;
+    PythonEventThread* m_pyWorker;
 
     Main_PAW_widget* mainwidget;
+    PortaudioThread* m_audiothread;
 
     JsonLoader loader;
 

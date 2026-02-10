@@ -20,7 +20,25 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
 {
     ui->setupUi(this);
 
-    pythread = new PythonEventThread(audioThread);
+    m_pythonThread = new QThread(this);
+
+
+    m_pyWorker = new PythonEventThread(audioThread, parent);
+
+
+    m_pyWorker->moveToThread(m_pythonThread);
+
+    connect(m_pythonThread, &QThread::finished, m_pyWorker, &QObject::deleteLater);
+
+
+    connect(this, &Settings_PAW_gui::requestLoadPlugin,
+        m_pyWorker, &PythonEventThread::loadPluginAsync);
+
+    connect(m_pyWorker, &PythonEventThread::pluginLoadFinished,
+        this, &Settings_PAW_gui::onPluginLoaded);
+
+
+    m_pythonThread->start();
 
     connect(ui->settingsMenu, &QListWidget::currentRowChanged,
         ui->settingsStack, &QStackedWidget::setCurrentIndex);
@@ -48,8 +66,6 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
         addPluginsfromJson();
     }
 
-
-
     QPushButton* applyButton = ui->buttonBox->button(QDialogButtonBox::Apply);
     if (applyButton) {
         connect(applyButton, &QPushButton::clicked, this, &Settings_PAW_gui::applySettings);
@@ -67,6 +83,12 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
 
 Settings_PAW_gui::~Settings_PAW_gui()
 {
+
+    if (m_pythonThread->isRunning()) {
+        m_pythonThread->quit();
+        m_pythonThread->wait(); 
+    }
+
     delete ui;
 }
 
@@ -122,25 +144,7 @@ void Settings_PAW_gui::addplugins() {
     for (const QString& file : files) {
         if (file.isEmpty()) continue;
 
-        bool success = ProcessPlugin(file);
-
-        if (success) {
-            std::string stdPath = QFileInfo(file).absoluteFilePath().toStdString();
-
-            bool exists = false;
-            for (const auto& item : pluginsList) {
-                if (item.get<std::string>() == stdPath) { exists = true; break; }
-            }
-
-            if (!exists) {
-                pluginsList.push_back(stdPath);
-                listChanged = true;
-            }
-        }
-    }
-
-    if (listChanged) {
-        loader.save_config(pluginsList, "plugins.json");
+        emit requestLoadPlugin(file);
     }
 }
 
@@ -151,33 +155,30 @@ void Settings_PAW_gui::addPluginsfromJson() {
         for (const auto& item : pluginsList) {
             QString filePath = QString::fromStdString(item.get<std::string>());
 
-            ProcessPlugin(filePath);
+            emit requestLoadPlugin(filePath);
         }
     }
 }
 
-bool Settings_PAW_gui::ProcessPlugin(const QString& filePath) {
-    QFileInfo fileInfo(filePath);
-    if (!fileInfo.exists()) return false;
+void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fileName) {
+    if (!success) return;
 
-    QString fileName = fileInfo.fileName();
-    QString moduleName = fileInfo.completeBaseName(); 
-    QString dirPath = fileInfo.absolutePath(); 
+    for (int i = 0; i < ui->PluginsList->count(); ++i) {
+        if (ui->PluginsList->item(i)->data(Qt::UserRole).toString() == filePath)
+            return;
+    }
 
+    QListWidgetItem* item = new QListWidgetItem(fileName);
+    item->setData(Qt::UserRole, filePath);
+    item->setToolTip(filePath);
+    ui->PluginsList->addItem(item);
 
-
-        bool inUi = pythread->openPlugin(filePath);
-        for (int i = 0; i < ui->PluginsList->count(); ++i) {
-            QString storedPath = ui->PluginsList->item(i)->data(Qt::UserRole).toString();
-            if (storedPath == fileInfo.absoluteFilePath()) { inUi = true; break; }
-        }
-
-        if (!inUi) {
-            QListWidgetItem* item = new QListWidgetItem(fileName);
-            item->setData(Qt::UserRole, fileInfo.absoluteFilePath());
-            item->setToolTip(fileInfo.absoluteFilePath());
-            ui->PluginsList->addItem(item);
-        }
-
-        return true;
+    std::string stdPath = filePath.toStdString();
+    bool exists = false;
+    for (const auto& item : pluginsList) {
+        if (item.get<std::string>() == stdPath) { exists = true; break; }
+    }
+    if (!exists) {
+        pluginsList.push_back(stdPath);
+    }
 }

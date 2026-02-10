@@ -18,6 +18,7 @@ PortaudioThread* global_audiothread = nullptr;
 
 #ifdef Q_OS_LINUX
 #include "PAW_GUI/GlobalLinuxKeys.h"
+#include <QDBusConnection>
 #endif
 
 int main(int argc, char* argv[]) {
@@ -46,11 +47,8 @@ int main(int argc, char* argv[]) {
         else {
             QMessageBox::warning(nullptr, "PAW GUI", "Application is already running, but not responding.");
         }
-        return 0; 
+        return 0;
     }
-
-
-
 
     py::scoped_interpreter guard{};
 
@@ -87,18 +85,17 @@ int main(int argc, char* argv[]) {
         qWarning() << "Unable to start local server:" << server.errorString();
     }
 
+
     try {
         py::module_ sys = py::module_::import("sys");
-        sys.attr("path").attr("append")("."); 
+        sys.attr("path").attr("append")(".");
 
         py::module_ my_module = py::module_::import("PAW_python");
-        qDebug() << "Python Plugin loaded successfully.";
-
+        qDebug() << "Python API loaded successfully.";
     }
     catch (const std::exception& e) {
-        qCritical() << "Failed to load Python plugin:" << e.what();
+        qCritical() << "Failed to load Python API:" << e.what();
     }
-
 
     QIcon appIcon;
     appIcon.addFile(":/assets/icon_64.png");
@@ -111,6 +108,8 @@ int main(int argc, char* argv[]) {
     }
 
     w.show();
+
+    py::gil_scoped_release release;
 
 #ifdef Q_OS_LINUX
     LinuxKeys* keys = new LinuxKeys(&w);
@@ -137,5 +136,7 @@ int main(int argc, char* argv[]) {
     int result = a.exec();
 
     Pa_Terminate();
+
     return result;
+
 }

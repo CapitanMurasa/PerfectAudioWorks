@@ -6,14 +6,23 @@
 
 #pragma pop_macro("slots")
 #include <QObject>
-//#include "../PAW_GUI/main_paw_widget.h"
 #include "../AudioPharser/PortAudioHandler.h"
+
+class Main_PAW_widget;
 
 class PythonEventThread : public QObject {
     Q_OBJECT
 
 public:
-    PythonEventThread(PortaudioThread* audioThread);
+    PythonEventThread(PortaudioThread* audioThread, Main_PAW_widget* mainWidget);
     ~PythonEventThread();
-    bool openPlugin(const QString& filePath);
+
+public slots:
+    void loadPluginAsync(const QString& filePath);
+
+signals:
+    void pluginLoadFinished(bool success, QString filePath, QString fileName);
+
+private:
+    bool openPluginInternal(const QString& filePath);
 };
