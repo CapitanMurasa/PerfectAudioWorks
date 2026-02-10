@@ -25,6 +25,8 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
 
     m_pyWorker = new PythonEventThread(audioThread, parent);
 
+    global_pyevent = m_pyWorker;
+
 
     m_pyWorker->moveToThread(m_pythonThread);
 
@@ -83,12 +85,12 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
 
 Settings_PAW_gui::~Settings_PAW_gui()
 {
+    global_pyevent = nullptr;
 
     if (m_pythonThread->isRunning()) {
         m_pythonThread->quit();
-        m_pythonThread->wait(); 
+        m_pythonThread->wait();
     }
-
     delete ui;
 }
 
@@ -160,7 +162,7 @@ void Settings_PAW_gui::addPluginsfromJson() {
     }
 }
 
-void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fileName) {
+void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fileName, QString Pluginname) {
     if (!success) return;
 
     for (int i = 0; i < ui->PluginsList->count(); ++i) {
@@ -180,5 +182,6 @@ void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fi
     }
     if (!exists) {
         pluginsList.push_back(stdPath);
+        loader.save_config(pluginsList, "plugins.json");
     }
 }

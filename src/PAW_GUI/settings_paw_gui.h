@@ -3,6 +3,7 @@
 
 #include "../miscellaneous/PythonEvent.h"
 #include "../AudioPharser/PortAudioHandler.h" 
+#include "../miscellaneous/python_bindings.h" 
 #include "../miscellaneous/json.h"
 
 #include <QDialog>  
@@ -36,7 +37,7 @@ public:
 private slots:
     void applySettings();
     void addplugins();
-    void onPluginLoaded(bool success, QString filePath, QString fileName);
+    void onPluginLoaded(bool success, QString filePath, QString fileName, QString Pluginname);
 
 signals:
     void requestLoadPlugin(QString path);

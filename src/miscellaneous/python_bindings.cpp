@@ -3,82 +3,100 @@
 #include "python_bindings.h"
 #include <QString> 
 #include <QDebug> 
+#include <QMetaObject> 
 
-#include "file.h" 
+#include "../PAW_GUI/main_paw_widget.h"
+#include "../AudioPharser/PortAudioHandler.h"
+
+#include "PythonEvent.h"
 
 namespace py = pybind11;
 
-bool is_ready() {
-    return global_paw_widget != nullptr;
-}
+PythonEventThread* global_pyevent = nullptr;
 
-std::string GetFile() {
-    if (!is_ready()) return "";
-    return global_paw_widget->m_currentFile.toStdString();
-}
-
-bool IsPlaybackActive() {
-    if (global_audiothread) {
-        return global_audiothread->m_isRunning;
+class PAW_Interface {
+public:
+    PAW_Interface() {
+        
     }
-    return false;
-}
 
-std::string GetTitle() {
-    if (!is_ready()) return "";
+    bool is_ready() const {
+        return global_paw_widget != nullptr;
+    }
 
-    return global_paw_widget->file_info.title;
-}
+    void setInfo(std::string pluginname) {
+        if (global_pyevent) {
+            QMetaObject::invokeMethod(global_pyevent, "InitializePlugin",
+                Qt::QueuedConnection,
+                Q_ARG(QString, QString::fromStdString(pluginname)));
+        }
+        else {
+            qWarning() << "PAW_Interface: global_pyevent is null. Cannot set plugin info.";
+        }
+    }
 
-std::string GetArtist() {
-    if (!is_ready()) return "";
-    return global_paw_widget->file_info.artist;
-}
+    void playFile(std::string filename) {
+        if (is_ready()) {
+            QMetaObject::invokeMethod(global_paw_widget, [filename]() {
+                global_paw_widget->StopPlayback();
+                global_paw_widget->start_playback(QString::fromStdString(filename));
+                });
+        }
+    }
 
-std::string GetAlbum() {
-    if (!is_ready()) return "";
-    return global_paw_widget->file_info.album;
-}
+    void registerUpdate(py::function callback, int interval_ms) {
+        if (global_pyevent) {
+            global_pyevent->registerCallback(callback, interval_ms);
+        }
+        else {
+            qWarning() << "Cannot register callback: global_pyevent is null";
+        }
+    }
 
-std::string GetGenre() {
-    if (!is_ready()) return "";
-    return global_paw_widget->file_info.genre;
-}
+    bool isPlaybackActive() {
+        if (global_audiothread) return global_audiothread->m_isRunning;
+        return false;
+    }
 
+    std::string getTitle() {
+        return is_ready() ? global_paw_widget->file_info.title : "";
+    }
 
-std::string GetTimeElapsed() {
-    if (!is_ready()) return "00:00";
-    return global_paw_widget->returnTimeElapsed().toStdString();
-}
+    std::string getArtist() {
+        return is_ready() ? global_paw_widget->file_info.artist : "";
+    }
 
-std::string GetTotalTime() {
-    if (!is_ready()) return "00:00";
-    return global_paw_widget->returnTimeStamp().toStdString();
-}
+    std::string getAlbum() {
+        return is_ready() ? global_paw_widget->file_info.album : "";
+    }
 
+    std::string getGenre() {
+        return is_ready() ? global_paw_widget->file_info.genre : "";
+    }
 
-void py_log(std::string message) {
-    qDebug().noquote() << "PYTHON:" << QString::fromStdString(message);
-}
+    std::string getTimeElapsed() {
+        return is_ready() ? global_paw_widget->returnTimeElapsed().toStdString() : "00:00";
+    }
 
-void PlayFile(std::string filename) {
-    if (!is_ready()) return;
-
-    global_paw_widget->StopPlayback();
-    global_paw_widget->start_playback(QString::fromStdString(filename));
-}
-
+    std::string getTotalTime() {
+        return is_ready() ? global_paw_widget->returnTimeStamp().toStdString() : "00:00";
+    }
+};
 
 PYBIND11_EMBEDDED_MODULE(PAW_python, m) {
-    m.doc() = "PerfectAudioWorks Internal Python API";
-    m.def("PlayFile", &PlayFile);
-    m.def("IsPlaybackActive", &IsPlaybackActive);
-    m.def("GetFile", &GetFile);
-    m.def("GetTitle", &GetTitle);
-    m.def("GetArtist", &GetArtist);
-    m.def("GetAlbum", &GetAlbum);
-    m.def("GetGenre", &GetGenre);
-    m.def("GetTimeElapsed", &GetTimeElapsed);
-    m.def("GetTotalTime", &GetTotalTime);
-    m.def("PAWLog", &py_log);
+    m.doc() = "PerfectAudioWorks Object API";
+
+    py::class_<PAW_Interface>(m, "PAW")
+        .def(py::init<>()) 
+        .def("play", &PAW_Interface::playFile)
+        .def("is_ready", &PAW_Interface::is_ready)
+        .def("setInfo", &PAW_Interface::setInfo)
+        .def("register_update", &PAW_Interface::registerUpdate)
+        .def("IsPlaybackActive", &PAW_Interface::isPlaybackActive)
+        .def("GetTitle", &PAW_Interface::getTitle)
+        .def("GetArtist", &PAW_Interface::getArtist)
+        .def("GetAlbum", &PAW_Interface::getAlbum)
+        .def("GetGenre", &PAW_Interface::getGenre)
+        .def("GetTimeElapsed", &PAW_Interface::getTimeElapsed)
+        .def("GetTotalTime", &PAW_Interface::getTotalTime);
 }
