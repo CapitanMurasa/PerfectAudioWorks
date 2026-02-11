@@ -115,6 +115,11 @@ void Settings_PAW_gui::SetupJson() {
     if (settings.contains("use_external_album_art")) useExtArt = settings["use_external_album_art"].get<bool>();
     ui->UseExternalAlbumArt->setChecked(useExtArt);
     setCanUseExternalAlbumart(useExtArt);
+
+    bool UsePlugins = false;
+    if (settings.contains("use_plugins")) UsePlugins = settings["use_plugins"].get<bool>();
+    ui->enablePLuginsSupportCheckBox->setChecked(UsePlugins);
+    usePlugins = UsePlugins;
 }
 
 void Settings_PAW_gui::applySettings() {
@@ -134,21 +139,33 @@ void Settings_PAW_gui::applySettings() {
     settings["use_external_album_art"] = useExtArt;
     setCanUseExternalAlbumart(useExtArt);
 
+    bool UsePlugins = ui->enablePLuginsSupportCheckBox->isChecked();
+    settings["use_plugins"] = UsePlugins;
+    usePlugins = UsePlugins;
+
     loader.save_config(settings, "settings.json");
     qDebug() << "Settings applied and saved.";
 }
 
 void Settings_PAW_gui::addplugins() {
+    if (!usePlugins) {
+        return;
+    }
     QStringList files = QFileDialog::getOpenFileNames(this, "Select Python Plugins", "", "Python Files (*.py)");
 
     for (const QString& file : files) {
         if (file.isEmpty()) continue;
         emit requestLoadPlugin(file);
+
     }
 }
 
 void Settings_PAW_gui::addPluginsfromJson() {
     ui->PluginsList->clear();
+
+    if (!usePlugins) {
+        return;
+    }
 
     if (pluginsList.is_array()) {
         for (const auto& item : pluginsList) {

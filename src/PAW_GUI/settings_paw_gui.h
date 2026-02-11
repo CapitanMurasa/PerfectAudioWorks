@@ -55,6 +55,8 @@ private:
 
     JsonLoader loader;
 
+    bool usePlugins;
+
     void SetupJson();
 
     void addPluginsfromJson();
