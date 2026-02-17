@@ -119,7 +119,7 @@ Run the player:
 3. ~~**Playing through mpg123 would result in white noise**~~
    ✅ Fixed: sample format conversion from int16 to float32 is now handled correctly.
 
-### For more issues with this program look up to Issues tab in this repo.
+### For more issues with this program look to Issues tab in this repo.
 
 ---
 
