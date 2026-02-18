@@ -46,6 +46,7 @@ void PythonEventThread::loadPluginAsync(const QString& filePath) {
 }
 
 bool PythonEventThread::openPluginInternal(const QString& filePath) {
+    this->pluginname = "";
     QFileInfo fileInfo(filePath);
     QString fileName = fileInfo.fileName();
     QString moduleName = fileInfo.completeBaseName();
@@ -82,8 +83,14 @@ bool PythonEventThread::openPluginInternal(const QString& filePath) {
         return true;
 
     }
+    catch (py::error_already_set& e) {
+        qCritical() << "Python Error:" << e.what();
+        RequestMessageBox(PAW_ERROR, QString::fromStdString(e.what()));
+        return false;
+    }
     catch (const std::exception& e) {
-        qCritical() << "Python Plugin Error:" << e.what();
+        qCritical() << "C++ Error:" << e.what();
+        RequestMessageBox(PAW_ERROR, e.what());
         return false;
     }
 }

@@ -36,6 +36,9 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
     connect(m_pyWorker, &PythonEventThread::pluginLoadFinished,
         this, &Settings_PAW_gui::onPluginLoaded);
 
+    connect(m_pyWorker, &PythonEventThread::RequestMessageBox,
+        this, &Settings_PAW_gui::ShowMessageBox);
+
     m_pythonThread->start();
 
     connect(ui->settingsMenu, &QListWidget::currentRowChanged,
@@ -69,7 +72,7 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
     }
 
     connect(this, &QDialog::accepted, this, &Settings_PAW_gui::applySettings);
-
+    ui->PluginsList->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(ui->AddPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::addplugins);
     connect(ui->reloadPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::reloadplugins);
@@ -201,7 +204,7 @@ void Settings_PAW_gui::deletePlugin() {
 
         if (pluginsList.is_array() && currentRow < pluginsList.size()) {
             loader.RemoveItemByIndex(pluginsList, currentRow);
-            loader.save_config(pluginsList, "playlist.json");
+            loader.save_config(pluginsList, "plugins.json");
         }
 
         delete ui->PluginsList->takeItem(currentRow);
@@ -239,8 +242,18 @@ void Settings_PAW_gui::addPluginsfromJson() {
     }
 }
 
-void Settings_PAW_gui::ShowMessageBox(QString type, QString message) {
-    return;
+void Settings_PAW_gui::ShowMessageBox(Messagetype type, QString message) {
+    switch (type) {
+    case PAW_WARNING:
+        QMessageBox::warning(this, "message from plugin", message);
+        break;
+    case PAW_ERROR:
+        QMessageBox::critical(this, "message from plugin", message);
+        break;
+    case PAW_INFO:
+        QMessageBox::information(this, "message from plugin", message);
+        break;
+    }
 }
 
 void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fileName, QString Pluginname) {

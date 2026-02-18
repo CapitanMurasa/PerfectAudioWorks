@@ -64,8 +64,7 @@ target_include_directories(PAW PRIVATE
 
 
 find_path(PORTAUDIO_INCLUDE_DIR portaudio.h)
-find_library(PORTAUDIO_LIB NAMES libportaudio.a portaudio_static portaudio)
-
+find_library(PORTAUDIO_LIB NAMES portaudio)
 if(PORTAUDIO_INCLUDE_DIR AND PORTAUDIO_LIB)
     target_include_directories(PAW PRIVATE ${PORTAUDIO_INCLUDE_DIR})
     set(PORTAUDIO_TARGET ${PORTAUDIO_LIB})

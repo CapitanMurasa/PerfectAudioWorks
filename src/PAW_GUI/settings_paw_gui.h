@@ -5,6 +5,7 @@
 #include "../AudioPharser/PortAudioHandler.h" 
 #include "../miscellaneous/python_bindings.h" 
 #include "../miscellaneous/json.h"
+#include "Enums.h"
 
 #include <QDialog>  
 #include <QDebug>
@@ -41,7 +42,7 @@ private slots:
     void reloadplugins();
     void deletePlugin();
     void showPlaylistContextMenu(const QPoint& pos);
-    void ShowMessageBox(QString type, QString message);
+    void ShowMessageBox(Messagetype type, QString message);
 
 signals:
     void requestLoadPlugin(QString path);

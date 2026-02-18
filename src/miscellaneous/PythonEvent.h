@@ -10,6 +10,7 @@
 #include <QObject>
 #include <QTimer>
 #include <vector>
+#include "../PAW_GUI/Enums.h"
 #include "../AudioPharser/PortAudioHandler.h"
 
 class Main_PAW_widget;
@@ -37,7 +38,7 @@ public slots:
 
 signals:
     void pluginLoadFinished(bool success, QString filePath, QString fileName, QString pluginName);
-    void Pyerror(QString error, QString from);
+    void RequestMessageBox(Messagetype type, QString message);
 
 private:
     bool openPluginInternal(const QString& filePath);
