@@ -52,6 +52,7 @@ extern "C" {
     int audio_pause(AudioPlayer* player, int pause);
     int audio_seek(AudioPlayer* player, int64_t frame);
     int device_hotswap(AudioPlayer* player, int device);
+    int audio_cleanup_resources(AudioPlayer* player);
 
     void pa_mutex_init(pa_mutex_t* lock);
     void pa_mutex_lock(pa_mutex_t* lock);

@@ -23,6 +23,8 @@ PortaudioThread::~PortaudioThread() {
 
     audio_terminate();
 
+    audio_cleanup_resources(&m_player);
+
     pa_mutex_destroy(&m_player.lock);
 }
 

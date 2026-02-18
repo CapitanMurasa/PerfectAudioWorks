@@ -22,7 +22,7 @@ typedef struct {
     long samplerate;
     long total_frames;
     long current_frame;
-} MPG123Decoder; // <-- FIX 1: Removed the 'S' typo
+} MPG123Decoder; 
 
 MPG123Decoder* MPG123Decoder_open(const char* filename);
 

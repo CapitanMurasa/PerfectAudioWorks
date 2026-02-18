@@ -8,9 +8,7 @@ typedef struct {
     float* buffer;
     size_t readPos;
     size_t writePos;
-    size_t available;
     size_t capacity;
-    pthread_mutex_t mutex;
 } AudioRing;
 
 void AudioRing_Init(AudioRing* ring, size_t size);

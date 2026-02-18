@@ -34,6 +34,7 @@ void pa_mutex_unlock(pa_mutex_t* lock) { pthread_mutex_unlock(lock); }
 void pa_mutex_destroy(pa_mutex_t* lock) { pthread_mutex_destroy(lock); }
 #endif
 
+#define SAFE_BUFFER_SIZE (192000 * 2 * 5)
 
 THREAD_FUNC_RETURN DecoderThreadFunc(void* userData) {
     AudioPlayer* player = (AudioPlayer*)userData;
@@ -46,15 +47,15 @@ THREAD_FUNC_RETURN DecoderThreadFunc(void* userData) {
             continue;
         }
 
-
-        if (player->ringBuffer.available > (player->ringBuffer.capacity - (CHUNK_SIZE * player->channels))) {
+        size_t freeSpace = (player->ringBuffer.readPos - player->ringBuffer.writePos + player->ringBuffer.capacity - 1) % player->ringBuffer.capacity;
+        if (freeSpace < (CHUNK_SIZE * player->channels)) {
             SLEEP_MS(10);
-            continue;
+            continue; 
         }
 
-        pa_mutex_lock(&player->lock);
+
         long framesRead = codec_read_float(player->codec, tempBuffer, CHUNK_SIZE);
-        pa_mutex_unlock(&player->lock);
+
 
         if (framesRead > 0) {
             AudioRing_Write(&player->ringBuffer, tempBuffer, framesRead * player->channels);
@@ -135,7 +136,14 @@ static int setup_stream_internal(AudioPlayer* player, int device) {
 
 static int audio_start_common(AudioPlayer* player, int device) {
     size_t bufferSize = player->samplerate * player->channels * 5;
-    AudioRing_Init(&player->ringBuffer, bufferSize);
+    if (player->ringBuffer.buffer != NULL) {
+        AudioRing_Clear(&player->ringBuffer);
+
+        memset(player->ringBuffer.buffer, 0, player->ringBuffer.capacity * sizeof(float));
+    }
+    else {
+        AudioRing_Init(&player->ringBuffer, SAFE_BUFFER_SIZE);
+    }
 
 
     player->threadExitFlag = 0;
@@ -216,8 +224,13 @@ int audio_stop(AudioPlayer* player) {
         player->codec = NULL;
     }
 
-    AudioRing_Free(&player->ringBuffer);
+    return 0;
+}
 
+int audio_cleanup_resources(AudioPlayer* player) {
+    if (player) {
+        AudioRing_Free(&player->ringBuffer);
+    }
     return 0;
 }
 
