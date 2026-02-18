@@ -2,6 +2,7 @@
 #define PORTAUDIO_BACKEND_H
 
 #include "CodecHandler.h"
+#include "AudioRingBuffer.h"
 #include <portaudio.h>
 #include <stdint.h>
 
@@ -17,7 +18,7 @@ typedef pthread_mutex_t pa_mutex_t;
 extern "C" {
 #endif
 
-    typedef struct {
+    typedef struct AudioPlayer{
         CodecHandler* codec;
         PaStream* stream;
         const char* CodecName;
@@ -29,21 +30,33 @@ extern "C" {
         float lastGain;
         int paused;
         pa_mutex_t lock;
+        const char* filename;
+
+        AudioRing ringBuffer;      
+        void* decoderThreadHandle;  
+        int threadExitFlag;         
+        int isBuffering;
     } AudioPlayer;
 
     int audio_init();
     int audio_terminate();
 
-    int audio_play(AudioPlayer* player, const char* filename, int device);
-
     #ifdef _WIN32
     #include <wchar.h>
     int audio_play_w(AudioPlayer* player, const wchar_t* filename_w, int device);
+    #else
+    int audio_play(AudioPlayer* player, const char* filename, int device);
     #endif
 
     int audio_stop(AudioPlayer* player);
     int audio_pause(AudioPlayer* player, int pause);
     int audio_seek(AudioPlayer* player, int64_t frame);
+    int device_hotswap(AudioPlayer* player, int device);
+
+    void pa_mutex_init(pa_mutex_t* lock);
+    void pa_mutex_lock(pa_mutex_t* lock);
+    void pa_mutex_unlock(pa_mutex_t* lock);
+    void pa_mutex_destroy(pa_mutex_t* lock);
 
     int audio_callback_c(const void* input, void* output, unsigned long frameCount,
         const PaStreamCallbackTimeInfo* timeInfo,
@@ -54,4 +67,4 @@ extern "C" {
 }
 #endif
 
-#endif // PORTAUDIO_BACKEND_H
+#endif 

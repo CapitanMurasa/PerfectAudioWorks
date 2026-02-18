@@ -155,7 +155,7 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLabel" name="Filename">
+      <widget class="ScrollingLabel" name="Filename">
        <property name="font">
         <font>
          <pointsize>20</pointsize>
@@ -322,6 +322,10 @@
     <addaction name="actionopen_file"/>
     <addaction name="separator"/>
     <addaction name="actionadd_files_to_playlist"/>
+    <addaction name="actionadd_folders_to_playlist"/>
+    <addaction name="actionadd_current_file_to_playlist"/>
+    <addaction name="separator"/>
+    <addaction name="actionShow_Details"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -360,7 +364,29 @@
     <string>add files to playlist...</string>
    </property>
   </action>
+  <action name="actionadd_folders_to_playlist">
+   <property name="text">
+    <string>add folders to playlist...</string>
+   </property>
+  </action>
+  <action name="actionadd_current_file_to_playlist">
+   <property name="text">
+    <string>add current file to playlist...</string>
+   </property>
+  </action>
+  <action name="actionShow_Details">
+   <property name="text">
+    <string>Show Details...</string>
+   </property>
+  </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ScrollingLabel</class>
+   <extends>QLabel</extends>
+   <header>ScrollingLabel.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

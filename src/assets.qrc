@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>assets/paw.ico</file>
+    </qresource>
+</RCC>

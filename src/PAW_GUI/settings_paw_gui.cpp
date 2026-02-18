@@ -1,23 +1,48 @@
 #include "settings_paw_gui.h"
 #include "ui_settings_paw_gui.h"
-#include <QPushButton>
+#include "main_paw_widget.h"
+#include "../AudioPharser/PortAudioHandler.h"
 
-Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, QWidget* parent)
-    : QMainWindow(parent)
+#include <QPushButton>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QDir>
+#include <QCoreApplication>
+#include <QDebug>
+#include <QMenu>
+
+namespace py = pybind11;
+
+Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget* parent)
+    : QDialog(parent)
     , ui(new Ui::Settings_PAW_gui)
     , m_audiothread(audioThread)
+    , mainwidget(parent)
 {
     ui->setupUi(this);
+
+    m_pythonThread = new QThread(this);
+    m_pyWorker = new PythonEventThread(audioThread, parent);
+
+    global_pyevent = m_pyWorker;
+
+    m_pyWorker->moveToThread(m_pythonThread);
+
+
+
+    connect(this, &Settings_PAW_gui::requestLoadPlugin,
+        m_pyWorker, &PythonEventThread::loadPluginAsync);
+
+    connect(m_pyWorker, &PythonEventThread::pluginLoadFinished,
+        this, &Settings_PAW_gui::onPluginLoaded);
+
+    m_pythonThread->start();
 
     connect(ui->settingsMenu, &QListWidget::currentRowChanged,
         ui->settingsStack, &QStackedWidget::setCurrentIndex);
 
-    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &Settings_PAW_gui::applySettingsandExit);
-    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &Settings_PAW_gui::close);
-
-    mainwidget = qobject_cast<Main_PAW_widget*>(parent);
-
     if (m_audiothread) {
+        ui->audioDeviceComboBox->clear();
         QList<QPair<QString, int>> availableDevices = m_audiothread->GetAllAvailableOutputDevices();
         for (const auto& device : availableDevices) {
             ui->audioDeviceComboBox->addItem(device.first, device.second);
@@ -31,74 +56,218 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, QWidget* parent
         qWarning() << "No settings found, starting with defaults.";
     }
 
-    auto applyButton = ui->buttonBox->button(QDialogButtonBox::Apply);
+    if (!loader.load_jsonfile(pluginsList, "plugins.json")) {
+        pluginsList = nlohmann::json::array();
+    }
+    else {
+        addPluginsfromJson();
+    }
+
+    QPushButton* applyButton = ui->buttonBox->button(QDialogButtonBox::Apply);
     if (applyButton) {
         connect(applyButton, &QPushButton::clicked, this, &Settings_PAW_gui::applySettings);
     }
+
+    connect(this, &QDialog::accepted, this, &Settings_PAW_gui::applySettings);
+
+
+    connect(ui->AddPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::addplugins);
+    connect(ui->reloadPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::reloadplugins);
+    connect(ui->PluginsList, &QListWidget::customContextMenuRequested, this, &Settings_PAW_gui::showPlaylistContextMenu);
+
+    SetupQtActions();
 
     ui->settingsMenu->setCurrentRow(0);
 }
 
 Settings_PAW_gui::~Settings_PAW_gui()
 {
+    global_pyevent = nullptr;
+
+    if (m_pythonThread->isRunning()) {
+        m_pythonThread->quit();
+        m_pythonThread->wait();
+    }
+
+
+    delete m_pyWorker;
+    m_pyWorker = nullptr;
+
+    delete m_pythonThread;
+    m_pythonThread = nullptr;
+
     delete ui;
 }
 
+void Settings_PAW_gui::SetupQtActions() {
+    m_deleteAction = new QAction("Delete Item", this);
+    m_deleteAction->setShortcut(QKeySequence::Delete);
+    m_deleteAction->setShortcutContext(Qt::WidgetShortcut);
+    connect(m_deleteAction, &QAction::triggered, this, &Settings_PAW_gui::deletePlugin);
+    ui->PluginsList->addAction(m_deleteAction);
+}
+
 void Settings_PAW_gui::SetupJson() {
+    if (settings.contains("audio_device_index")) {
+        int savedIdx = settings["audio_device_index"].get<int>();
+        int uiIdx = ui->audioDeviceComboBox->findData(savedIdx);
+        if (uiIdx != -1) ui->audioDeviceComboBox->setCurrentIndex(uiIdx);
+    }
+
     if (settings.contains("save_playlists") && settings["save_playlists"].is_boolean()) {
         ui->SavePlaylistsCheck->setChecked(settings["save_playlists"].get<bool>());
     }
 
-    if (settings.contains("auto_skip_tracks") && settings["auto_skip_tracks"].is_boolean()) {
-        ui->AutoSkipTracks->setChecked(settings["auto_skip_tracks"].get<bool>());
-    }
-    else{
-        settings["auto_skip_tracks"] = true;
-    }
+    bool autoSkip = true;
+    if (settings.contains("auto_skip_tracks")) autoSkip = settings["auto_skip_tracks"].get<bool>();
+    ui->AutoSkipTracks->setChecked(autoSkip);
+    if (mainwidget) mainwidget->CanAutoSwitch = autoSkip;
 
+    bool useExtArt = true;
+    if (settings.contains("use_external_album_art")) useExtArt = settings["use_external_album_art"].get<bool>();
+    ui->UseExternalAlbumArt->setChecked(useExtArt);
+    setCanUseExternalAlbumart(useExtArt);
 
-    if (settings.contains("audio_device_index")) {
-        int savedIdx = settings["audio_device_index"].get<int>();
-        int uiIdx = ui->audioDeviceComboBox->findData(savedIdx);
-        if (uiIdx != -1) {
-            ui->audioDeviceComboBox->setCurrentIndex(uiIdx);
-        }
-    }
-
+    bool UsePlugins = false;
+    if (settings.contains("use_plugins")) UsePlugins = settings["use_plugins"].get<bool>();
+    ui->enablePLuginsSupportCheckBox->setChecked(UsePlugins);
+    usePlugins = UsePlugins;
 }
 
 void Settings_PAW_gui::applySettings() {
     if (m_audiothread) {
         int selectedPaDeviceIndex = ui->audioDeviceComboBox->currentData().toInt();
-        m_audiothread->setAudioDevice(selectedPaDeviceIndex);
-
+        m_audiothread->changeAudioDevice(selectedPaDeviceIndex);
         settings["audio_device_index"] = selectedPaDeviceIndex;
     }
 
+    settings["save_playlists"] = ui->SavePlaylistsCheck->isChecked();
 
-    if (ui->SavePlaylistsCheck->isChecked()) {
-        settings["save_playlists"] = true;
-    }
-    else {
-        settings["save_playlists"] = false;
-    }
+    bool autoSkip = ui->AutoSkipTracks->isChecked();
+    settings["auto_skip_tracks"] = autoSkip;
+    if (mainwidget) mainwidget->CanAutoSwitch = autoSkip;
 
-    if (ui->AutoSkipTracks->isChecked()) {
+    bool useExtArt = ui->UseExternalAlbumArt->isChecked();
+    settings["use_external_album_art"] = useExtArt;
+    setCanUseExternalAlbumart(useExtArt);
 
-        settings["auto_skip_tracks"] = true;
-        mainwidget->CanAutoSwitch = true;
-    }
-    else {
-        settings["auto_skip_tracks"] = false;
-        mainwidget->CanAutoSwitch = false;
-    }
-
+    bool UsePlugins = ui->enablePLuginsSupportCheckBox->isChecked();
+    settings["use_plugins"] = UsePlugins;
+    usePlugins = UsePlugins;
 
     loader.save_config(settings, "settings.json");
+    qDebug() << "Settings applied and saved.";
 }
 
-void Settings_PAW_gui::applySettingsandExit(){
-    applySettings();
+void Settings_PAW_gui::addplugins() {
+    if (!usePlugins) {
+        return;
+    }
+    QStringList files = QFileDialog::getOpenFileNames(this, "Select Python Plugins", "", "Python Files (*.py)");
 
-    this->close();
+    for (const QString& file : files) {
+        if (file.isEmpty()) continue;
+        emit requestLoadPlugin(file);
+
+    }
+}
+
+void Settings_PAW_gui::reloadplugins(){
+    if (!usePlugins) {
+        return;
+    }
+
+    QMetaObject::invokeMethod(m_pyWorker, "clearAllCallbacks", Qt::QueuedConnection);
+
+    for (int i = 0; i < ui->PluginsList->count(); ++i) {
+        QString file = ui->PluginsList->item(i)->data(Qt::UserRole).toString();
+        emit requestLoadPlugin(file);
+    }
+        
+}
+
+void Settings_PAW_gui::deletePlugin() {
+    if (!usePlugins) {
+        return;
+    }
+
+    int currentRow = ui->PluginsList->currentRow();
+
+    if (currentRow >= 0)
+    {
+
+        QListWidgetItem* itemToDelete = ui->PluginsList->item(currentRow);
+
+
+        if (pluginsList.is_array() && currentRow < pluginsList.size()) {
+            loader.RemoveItemByIndex(pluginsList, currentRow);
+            loader.save_config(pluginsList, "playlist.json");
+        }
+
+        delete ui->PluginsList->takeItem(currentRow);
+    }
+
+}
+
+void Settings_PAW_gui::showPlaylistContextMenu(const QPoint& pos) {
+    QListWidgetItem* clickedItem = ui->PluginsList->itemAt(pos);
+    bool itemClicked = (clickedItem != nullptr);
+
+    QMenu contextMenu(this);
+
+    if (m_deleteAction) {
+        contextMenu.addSeparator();
+        m_deleteAction->setEnabled(itemClicked);
+        contextMenu.addAction(m_deleteAction);
+    }
+
+    contextMenu.exec(ui->PluginsList->mapToGlobal(pos));
+}
+
+void Settings_PAW_gui::addPluginsfromJson() {
+    ui->PluginsList->clear();
+
+    if (!usePlugins) {
+        return;
+    }
+
+    if (pluginsList.is_array()) {
+        for (const auto& item : pluginsList) {
+            QString filePath = QString::fromStdString(item.get<std::string>());
+            emit requestLoadPlugin(filePath);
+        }
+    }
+}
+
+void Settings_PAW_gui::ShowMessageBox(QString type, QString message) {
+    return;
+}
+
+void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fileName, QString Pluginname) {
+    if (!success) return;
+
+    for (int i = 0; i < ui->PluginsList->count(); ++i) {
+        if (ui->PluginsList->item(i)->data(Qt::UserRole).toString() == filePath)
+            return;
+    }
+
+    QString displayText = Pluginname.isEmpty() ? fileName : Pluginname;
+
+    QListWidgetItem* item = new QListWidgetItem(displayText);
+
+    item->setData(Qt::UserRole, filePath); 
+    item->setToolTip(filePath);
+
+    ui->PluginsList->addItem(item);
+
+    std::string stdPath = filePath.toStdString();
+    bool exists = false;
+    for (const auto& item : pluginsList) {
+        if (item.get<std::string>() == stdPath) { exists = true; break; }
+    }
+
+    if (!exists) {
+        pluginsList.push_back(stdPath);
+        loader.save_config(pluginsList, "plugins.json");
+    }
 }

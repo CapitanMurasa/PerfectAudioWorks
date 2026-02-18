@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=PerfectAudioWorks
+Comment=Lightweight Audio Player
+Exec=PAW
+Icon=paw
+Categories=Audio;AudioVideo;Player;
+Terminal=false
