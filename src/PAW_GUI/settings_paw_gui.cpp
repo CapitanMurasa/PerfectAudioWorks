@@ -72,7 +72,6 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
     }
 
     connect(this, &QDialog::accepted, this, &Settings_PAW_gui::applySettings);
-    ui->PluginsList->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(ui->AddPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::addplugins);
     connect(ui->reloadPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::reloadplugins);
@@ -81,6 +80,7 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
     SetupQtActions();
 
     ui->settingsMenu->setCurrentRow(0);
+    ui->PluginsList->setContextMenuPolicy(Qt::CustomContextMenu);
 }
 
 Settings_PAW_gui::~Settings_PAW_gui()
@@ -230,14 +230,23 @@ void Settings_PAW_gui::showPlaylistContextMenu(const QPoint& pos) {
 void Settings_PAW_gui::addPluginsfromJson() {
     ui->PluginsList->clear();
 
-    if (!usePlugins) {
-        return;
-    }
+    if (!usePlugins) return;
 
     if (pluginsList.is_array()) {
         for (const auto& item : pluginsList) {
-            QString filePath = QString::fromStdString(item.get<std::string>());
-            emit requestLoadPlugin(filePath);
+            std::string pathStr;
+
+            if (item.is_object() && item.contains("path")) {
+                pathStr = item["path"].get<std::string>();
+            }
+            else if (item.is_string()) {
+                pathStr = item.get<std::string>();
+            }
+
+            if (!pathStr.empty()) {
+                QString filePath = QString::fromStdString(pathStr);
+                emit requestLoadPlugin(filePath);
+            }
         }
     }
 }
@@ -268,19 +277,44 @@ void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fi
 
     QListWidgetItem* item = new QListWidgetItem(displayText);
 
-    item->setData(Qt::UserRole, filePath); 
+    item->setData(Qt::UserRole, filePath);
     item->setToolTip(filePath);
 
     ui->PluginsList->addItem(item);
 
+
     std::string stdPath = filePath.toStdString();
+    std::string stdName = Pluginname.toStdString();
+    if (stdName.empty()) stdName = fileName.toStdString();
+
     bool exists = false;
-    for (const auto& item : pluginsList) {
-        if (item.get<std::string>() == stdPath) { exists = true; break; }
+
+    for (auto& item : pluginsList) {
+        if (item.is_object() && item.contains("path") && item["path"] == stdPath) {
+            item["name"] = stdName;
+            exists = true;
+            break;
+        }
+        else if (item.is_string() && item == stdPath) {
+            exists = true;
+            item = {
+                {"path", stdPath},
+                {"name", stdName},
+                {"version", "1.2"}, 
+                {"enabled", true}
+            };
+            break;
+        }
     }
 
     if (!exists) {
-        pluginsList.push_back(stdPath);
+        json newPlugin;
+        newPlugin["path"] = stdPath;
+        newPlugin["name"] = stdName;
+        newPlugin["version"] = "1.2"; 
+        newPlugin["enabled"] = true;
+
+        pluginsList.push_back(newPlugin);
         loader.save_config(pluginsList, "plugins.json");
     }
 }
