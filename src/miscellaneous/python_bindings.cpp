@@ -59,19 +59,19 @@ public:
     }
 
     std::string getTitle() {
-        return is_ready() ? global_paw_widget->file_info.title : "";
+        return is_ready() ? global_paw_widget->file_info_current.title : "";
     }
 
     std::string getArtist() {
-        return is_ready() ? global_paw_widget->file_info.artist : "";
+        return is_ready() ? global_paw_widget->file_info_current.artist : "";
     }
 
     std::string getAlbum() {
-        return is_ready() ? global_paw_widget->file_info.album : "";
+        return is_ready() ? global_paw_widget->file_info_current.album : "";
     }
 
     std::string getGenre() {
-        return is_ready() ? global_paw_widget->file_info.genre : "";
+        return is_ready() ? global_paw_widget->file_info_current.genre : "";
     }
 
     std::string getTimeElapsed() {

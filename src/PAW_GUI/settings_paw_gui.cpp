@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QMenu>
 
 namespace py = pybind11;
 
@@ -69,9 +70,12 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
 
     connect(this, &QDialog::accepted, this, &Settings_PAW_gui::applySettings);
 
-    if (ui->AddPluginsButton) {
-        connect(ui->AddPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::addplugins);
-    }
+
+    connect(ui->AddPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::addplugins);
+    connect(ui->reloadPluginsButton, &QPushButton::clicked, this, &Settings_PAW_gui::reloadplugins);
+    connect(ui->PluginsList, &QListWidget::customContextMenuRequested, this, &Settings_PAW_gui::showPlaylistContextMenu);
+
+    SetupQtActions();
 
     ui->settingsMenu->setCurrentRow(0);
 }
@@ -93,6 +97,14 @@ Settings_PAW_gui::~Settings_PAW_gui()
     m_pythonThread = nullptr;
 
     delete ui;
+}
+
+void Settings_PAW_gui::SetupQtActions() {
+    m_deleteAction = new QAction("Delete Item", this);
+    m_deleteAction->setShortcut(QKeySequence::Delete);
+    m_deleteAction->setShortcutContext(Qt::WidgetShortcut);
+    connect(m_deleteAction, &QAction::triggered, this, &Settings_PAW_gui::deletePlugin);
+    ui->PluginsList->addAction(m_deleteAction);
 }
 
 void Settings_PAW_gui::SetupJson() {
@@ -160,6 +172,58 @@ void Settings_PAW_gui::addplugins() {
     }
 }
 
+void Settings_PAW_gui::reloadplugins(){
+    if (!usePlugins) {
+        return;
+    }
+
+    QMetaObject::invokeMethod(m_pyWorker, "clearAllCallbacks", Qt::QueuedConnection);
+
+    for (int i = 0; i < ui->PluginsList->count(); ++i) {
+        QString file = ui->PluginsList->item(i)->data(Qt::UserRole).toString();
+        emit requestLoadPlugin(file);
+    }
+        
+}
+
+void Settings_PAW_gui::deletePlugin() {
+    if (!usePlugins) {
+        return;
+    }
+
+    int currentRow = ui->PluginsList->currentRow();
+
+    if (currentRow >= 0)
+    {
+
+        QListWidgetItem* itemToDelete = ui->PluginsList->item(currentRow);
+
+
+        if (pluginsList.is_array() && currentRow < pluginsList.size()) {
+            loader.RemoveItemByIndex(pluginsList, currentRow);
+            loader.save_config(pluginsList, "playlist.json");
+        }
+
+        delete ui->PluginsList->takeItem(currentRow);
+    }
+
+}
+
+void Settings_PAW_gui::showPlaylistContextMenu(const QPoint& pos) {
+    QListWidgetItem* clickedItem = ui->PluginsList->itemAt(pos);
+    bool itemClicked = (clickedItem != nullptr);
+
+    QMenu contextMenu(this);
+
+    if (m_deleteAction) {
+        contextMenu.addSeparator();
+        m_deleteAction->setEnabled(itemClicked);
+        contextMenu.addAction(m_deleteAction);
+    }
+
+    contextMenu.exec(ui->PluginsList->mapToGlobal(pos));
+}
+
 void Settings_PAW_gui::addPluginsfromJson() {
     ui->PluginsList->clear();
 
@@ -173,6 +237,10 @@ void Settings_PAW_gui::addPluginsfromJson() {
             emit requestLoadPlugin(filePath);
         }
     }
+}
+
+void Settings_PAW_gui::ShowMessageBox(QString type, QString message) {
+    return;
 }
 
 void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fileName, QString Pluginname) {

@@ -16,7 +16,17 @@ PythonEventThread::~PythonEventThread() {
     for (auto cb : activeCallbacks) {
         cb->timer->stop();
         delete cb->timer;
-        delete cb; 
+        delete cb;
+    }
+    activeCallbacks.clear();
+}
+
+void PythonEventThread::clearAllCallbacks() {
+    py::gil_scoped_acquire acquire;
+    for (auto cb : activeCallbacks) {
+        cb->timer->stop();
+        delete cb->timer;
+        delete cb;
     }
     activeCallbacks.clear();
 }

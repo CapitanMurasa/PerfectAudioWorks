@@ -38,6 +38,10 @@ private slots:
     void applySettings();
     void addplugins();
     void onPluginLoaded(bool success, QString filePath, QString fileName, QString Pluginname);
+    void reloadplugins();
+    void deletePlugin();
+    void showPlaylistContextMenu(const QPoint& pos);
+    void ShowMessageBox(QString type, QString message);
 
 signals:
     void requestLoadPlugin(QString path);
@@ -46,6 +50,7 @@ signals:
 
 private:
     Ui::Settings_PAW_gui* ui;
+    void SetupQtActions();
 
     QThread* m_pythonThread;
     PythonEventThread* m_pyWorker;
@@ -54,6 +59,7 @@ private:
     PortaudioThread* m_audiothread;
 
     JsonLoader loader;
+    QAction *m_deleteAction;
 
     bool usePlugins;
 

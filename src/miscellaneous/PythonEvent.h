@@ -33,9 +33,11 @@ public:
 public slots:
     void loadPluginAsync(const QString& filePath);
     void InitializePlugin(const QString& name);
+    void clearAllCallbacks();
 
 signals:
     void pluginLoadFinished(bool success, QString filePath, QString fileName, QString pluginName);
+    void Pyerror(QString error, QString from);
 
 private:
     bool openPluginInternal(const QString& filePath);

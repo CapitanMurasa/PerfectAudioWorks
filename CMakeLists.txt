@@ -51,7 +51,7 @@ set(SOURCES
 )
 
 if(WIN32)
-    add_executable(PAW ${SOURCES})
+    add_executable(PAW WIN32 ${SOURCES})
 else()
     add_executable(PAW ${SOURCES})
 endif()

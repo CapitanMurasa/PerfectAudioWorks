@@ -39,7 +39,7 @@ public:
     void StopPlayback();
     void PlayPauseButton();
 
-    FileInfo file_info;
+    FileInfo file_info_current;
 
     QString returnTimeElapsed();
     QString returnTimeStamp();
