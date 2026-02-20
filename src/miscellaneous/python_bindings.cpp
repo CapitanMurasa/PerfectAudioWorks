@@ -30,9 +30,6 @@ public:
                 Qt::QueuedConnection,
                 Q_ARG(QString, QString::fromStdString(pluginname)));
         }
-        else {
-            qWarning() << "PAW_Interface: global_pyevent is null. Cannot set plugin info.";
-        }
     }
 
     void playFile(std::string filename) {

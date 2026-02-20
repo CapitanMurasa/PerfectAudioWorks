@@ -5,4 +5,4 @@ Potential memory leak when changing songs
 
 Features:
 Allow plugins to utilize error/warning message boxes
-plugin error handleing 
+Disable/Enable plugins.
