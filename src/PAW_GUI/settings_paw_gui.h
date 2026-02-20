@@ -41,6 +41,7 @@ private slots:
     void onPluginLoaded(bool success, QString filePath, QString fileName, QString Pluginname);
     void reloadplugins();
     void deletePlugin();
+    void disablePlugin();
     void showPlaylistContextMenu(const QPoint& pos);
     void ShowMessageBox(Messagetype type, QString message);
 
@@ -61,6 +62,7 @@ private:
 
     JsonLoader loader;
     QAction *m_deleteAction;
+    QAction *m_disableAction;
 
     bool usePlugins;
 

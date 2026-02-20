@@ -103,7 +103,13 @@ Settings_PAW_gui::~Settings_PAW_gui()
 }
 
 void Settings_PAW_gui::SetupQtActions() {
-    m_deleteAction = new QAction("Delete Item", this);
+    m_disableAction = new QAction("Disable Plugin", this);
+    m_disableAction->setShortcut(QKeySequence::Delete);
+    m_disableAction->setShortcutContext(Qt::WidgetShortcut);
+    connect(m_disableAction, &QAction::triggered, this, &Settings_PAW_gui::disablePlugin);
+    ui->PluginsList->addAction(m_disableAction);
+
+    m_deleteAction = new QAction("Delete Plugin", this);
     m_deleteAction->setShortcut(QKeySequence::Delete);
     m_deleteAction->setShortcutContext(Qt::WidgetShortcut);
     connect(m_deleteAction, &QAction::triggered, this, &Settings_PAW_gui::deletePlugin);
@@ -212,17 +218,49 @@ void Settings_PAW_gui::deletePlugin() {
 
 }
 
+void Settings_PAW_gui::disablePlugin() {
+    if (!usePlugins) return;
+
+    int currentRow = ui->PluginsList->currentRow();
+    if (currentRow < 0 || !pluginsList.is_array() || currentRow >= (int)pluginsList.size()) {
+        return;
+    }
+
+    QListWidgetItem* item = ui->PluginsList->item(currentRow);
+    QString filePath = item->data(Qt::UserRole).toString();
+
+    bool nowEnabled = !pluginsList[currentRow].value("enabled", true);
+    pluginsList[currentRow]["enabled"] = nowEnabled;
+    loader.save_config(pluginsList, "plugins.json");
+
+    if (nowEnabled) {
+        QString cleanName = item->text().remove(" (Disabled)");
+        item->setText(cleanName);
+        item->setForeground(Qt::black);
+        emit requestLoadPlugin(filePath);
+    }
+    else {
+        if (!item->text().endsWith(" (Disabled)")) {
+            item->setText(item->text() + " (Disabled)");
+        }
+        item->setForeground(Qt::gray);
+    }
+}
+
 void Settings_PAW_gui::showPlaylistContextMenu(const QPoint& pos) {
     QListWidgetItem* clickedItem = ui->PluginsList->itemAt(pos);
-    bool itemClicked = (clickedItem != nullptr);
+    if (!clickedItem) return;
+
+    bool isDisabled = clickedItem->text().endsWith(" (Disabled)");
+    m_disableAction->setText(isDisabled ? "Enable Plugin" : "Disable Plugin");
 
     QMenu contextMenu(this);
+    m_deleteAction->setEnabled(true);
+    m_disableAction->setEnabled(true);
 
-    if (m_deleteAction) {
-        contextMenu.addSeparator();
-        m_deleteAction->setEnabled(itemClicked);
-        contextMenu.addAction(m_deleteAction);
-    }
+    contextMenu.addAction(m_disableAction);
+    contextMenu.addSeparator();
+    contextMenu.addAction(m_deleteAction);
 
     contextMenu.exec(ui->PluginsList->mapToGlobal(pos));
 }
@@ -235,9 +273,15 @@ void Settings_PAW_gui::addPluginsfromJson() {
     if (pluginsList.is_array()) {
         for (const auto& item : pluginsList) {
             std::string pathStr;
+            bool isEnabled = true; 
 
-            if (item.is_object() && item.contains("path")) {
-                pathStr = item["path"].get<std::string>();
+            if (item.is_object()) {
+                if (item.contains("path")) {
+                    pathStr = item["path"].get<std::string>();
+                }
+                if (item.contains("enabled") && item["enabled"].is_boolean()) {
+                    isEnabled = item["enabled"].get<bool>();
+                }
             }
             else if (item.is_string()) {
                 pathStr = item.get<std::string>();
@@ -245,7 +289,18 @@ void Settings_PAW_gui::addPluginsfromJson() {
 
             if (!pathStr.empty()) {
                 QString filePath = QString::fromStdString(pathStr);
-                emit requestLoadPlugin(filePath);
+
+
+                if (isEnabled) {
+                    emit requestLoadPlugin(filePath);
+                }
+                else {
+                    QListWidgetItem* listItem = new QListWidgetItem(QFileInfo(filePath).fileName() + " (Disabled)");
+                    listItem->setData(Qt::UserRole, filePath);
+                    listItem->setForeground(Qt::gray);
+                    listItem->setToolTip(filePath);
+                    ui->PluginsList->addItem(listItem);
+                }
             }
         }
     }
@@ -273,48 +328,56 @@ void Settings_PAW_gui::onPluginLoaded(bool success, QString filePath, QString fi
             return;
     }
 
-    QString displayText = Pluginname.isEmpty() ? fileName : Pluginname;
-
-    QListWidgetItem* item = new QListWidgetItem(displayText);
-
-    item->setData(Qt::UserRole, filePath);
-    item->setToolTip(filePath);
-
-    ui->PluginsList->addItem(item);
-
-
     std::string stdPath = filePath.toStdString();
-    std::string stdName = Pluginname.toStdString();
-    if (stdName.empty()) stdName = fileName.toStdString();
-
+    std::string stdName = Pluginname.isEmpty() ? fileName.toStdString() : Pluginname.toStdString();
+    bool isEnabled = true; 
     bool exists = false;
 
-    for (auto& item : pluginsList) {
-        if (item.is_object() && item.contains("path") && item["path"] == stdPath) {
-            item["name"] = stdName;
-            exists = true;
-            break;
-        }
-        else if (item.is_string() && item == stdPath) {
-            exists = true;
-            item = {
-                {"path", stdPath},
-                {"name", stdName},
-                {"version", "1.2"}, 
-                {"enabled", true}
-            };
-            break;
+    if (pluginsList.is_array()) {
+        for (auto& pluginObj : pluginsList) {
+            if (pluginObj.is_object() && pluginObj.contains("path") && pluginObj["path"] == stdPath) {
+                pluginObj["name"] = stdName;
+                isEnabled = pluginObj.value("enabled", true);
+                exists = true;
+                break;
+            }
+            else if (pluginObj.is_string() && pluginObj == stdPath) {
+                pluginObj = {
+                    {"path", stdPath},
+                    {"name", stdName},
+                    {"version", "1.2"},
+                    {"enabled", true}
+                };
+                isEnabled = true;
+                exists = true;
+                break;
+            }
         }
     }
 
     if (!exists) {
-        json newPlugin;
-        newPlugin["path"] = stdPath;
-        newPlugin["name"] = stdName;
-        newPlugin["version"] = "1.2"; 
-        newPlugin["enabled"] = true;
-
+        json newPlugin = {
+            {"path", stdPath},
+            {"name", stdName},
+            {"version", "1.2"},
+            {"enabled", true}
+        };
         pluginsList.push_back(newPlugin);
         loader.save_config(pluginsList, "plugins.json");
     }
+
+    QString displayText = QString::fromStdString(stdName);
+    QListWidgetItem* listItem = new QListWidgetItem(displayText);
+    listItem->setData(Qt::UserRole, filePath);
+    listItem->setToolTip(filePath);
+
+    if (isEnabled) {
+        listItem->setForeground(Qt::black);
+    }
+    else {
+        listItem->setForeground(Qt::gray);
+        listItem->setText(displayText + " (Disabled)");
+    }
+
+    ui->PluginsList->addItem(listItem);
 }
