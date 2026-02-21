@@ -44,6 +44,7 @@ Currently, the player:
 * `Qt6`
 * `LibTag`
 * `nlohmann/json`
+* `pybind11`
 * Optional codecs:
 
   * `libsndfile` (WAV, FLAC, OGG, Opus)
