@@ -10,6 +10,8 @@ Currently, the player:
 * Uses **PortAudio** to initialize the audio output buffer.
 * Uses **Qt6** for rendering the UI.
 * Uses **Libtag** to pharse album art and metadata info
+* Uses **nlohmann/json** to manipulate with json files
+* Uses **Pyton** and **Pybind11** as core libs for plugin system
 
 ---
 
@@ -54,27 +56,38 @@ Currently, the player:
 ```
 git clone --recursive https://github.com/CapitanMurasa/PerfectAudioWorks
 ```
-### Ubuntu / Debian
 
+### Ubuntu / Debian
 ```
 sudo apt update
-sudo apt install portaudio19-dev qt6-base-dev cmake build-essential \
-                 libsndfile1-dev mpg123-dev 
+sudo apt install cmake build-essential qt6-base-dev \
+                 portaudio19-dev libsndfile1-dev libmpg123-dev
 ```
-
 ### Arch Linux
 
 ```
-sudo pacman -S portaudio qt6-base cmake make gcc \
-               libsndfile mpg123
+sudo pacman -S cmake gcc make qt6-base \
+               portaudio libsndfile mpg123
 ```
+
+### Fedora
+```
+sudo dnf install cmake gcc-c++ make qt6-qtbase-devel \
+                 portaudio-devel libsndfile-devel mpg123-devel
+```
+
+Cloning & Building
 
 ### Windows
 Although windows release is out, it still less stable than linux release <br>
 install qt framework from [qt's official site](https://www.qt.io/download-dev) <br>
 install mingw compiler and then from mingw console install required components 
 ```
-pacman -S mingw-w64-x86_64-portaudio mingw-w64-x86_64-libsndfile mingw-w64-x86_64-mpg123
+pacman -S mingw-w64-x86_64-gcc \
+           mingw-w64-x86_64-cmake \
+           mingw-w64-x86_64-portaudio \
+           mingw-w64-x86_64-libsndfile \
+           mingw-w64-x86_64-mpg123
 ```
 
 ### Build Instructions
