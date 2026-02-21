@@ -39,8 +39,13 @@ public:
     void StopPlayback();
     void PlayPauseButton();
 
+    FileInfo file_info_current;
+
+    QString returnTimeElapsed();
+    QString returnTimeStamp();
+    QString m_currentFile;
+
     bool CanAutoSwitch = true;
-    bool UseSystemTray = false;
 
     
     PortaudioThread& getAudioThread() { return *m_audiothread; }
@@ -73,7 +78,6 @@ private:
     QTimer *m_updateTimer; 
     QAction *m_deleteAction;
     PortaudioThread* m_audiothread; 
-    QString m_currentFile; 
     FileInfo filemetadata;
     QListWidgetItem* currentItemPlaying;
     QPixmap m_originalAlbumArt;      
@@ -82,6 +86,8 @@ private:
     About_PAW_gui *about;
     JsonLoader loader;
     QSystemTrayIcon *trayIcon;
+    float currentDuration;
+    float totalDuration;
 
     QString floatToMMSS(float totalSeconds);
     void updateAlbumArt();
@@ -93,7 +99,6 @@ private:
     void ProcessFilesList(const QString& file);
     void addFilesToPlaylistfromJson();
     void ClearUi();
-    void setupSystemTray();
 
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
