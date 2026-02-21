@@ -38,7 +38,7 @@ private slots:
     void showPlaylistContextMenu(const QPoint& pos);
 
     void onPluginLoaded(bool success, QString filePath, QString fileName, QString pluginName);
-    void ShowMessageBox(Messagetype type, QString message);
+    void ShowMessageBox(Messagetype type, QString title, QString message);
 
 signals:
     void requestLoadPlugin(QString path);
@@ -60,6 +60,7 @@ private:
     void SetupQtActions();
     void SetupJson();
     void addPluginsfromJson();
+    void LoadDefaults();
 };
 
 #endif

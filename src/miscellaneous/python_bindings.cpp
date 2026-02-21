@@ -16,6 +16,7 @@ PythonEventThread* global_pyevent = nullptr;
 
 class PAW_Interface {
 public:
+    QString pluginname;
     PAW_Interface() {
         
     }
@@ -24,11 +25,12 @@ public:
         return global_paw_widget != nullptr;
     }
 
-    void setInfo(std::string pluginname) {
+    void setInfo(std::string stdpluginname) {
         if (global_pyevent) {
+            pluginname = QString::fromStdString(stdpluginname);
             QMetaObject::invokeMethod(global_pyevent, "InitializePlugin",
                 Qt::QueuedConnection,
-                Q_ARG(QString, QString::fromStdString(pluginname)));
+                Q_ARG(QString, pluginname));
         }
     }
 
@@ -46,6 +48,7 @@ public:
             QMetaObject::invokeMethod(global_pyevent, "sendMessagebox",
                 Qt::QueuedConnection,
                 Q_ARG(Messagetype, PAW_INFO),
+                Q_ARG(QString, "Message from:" + pluginname),
                 Q_ARG(QString, QString::fromStdString(message)));
         }
     }
