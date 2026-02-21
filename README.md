@@ -18,6 +18,7 @@ Currently, the player:
 <img width="603" height="683" alt="Perfect Audio Works on Windows" src="https://github.com/user-attachments/assets/3e1724c2-f818-445c-ab12-88f765c396ee">
 > Perfect Audio Works on Windows (v0.1.2)
 
+---
 
 <img width="600" height="678" alt="Perfect Audio Works on Linux (Kubuntu)" src="https://github.com/user-attachments/assets/069ff9d5-5eee-4ea3-ab40-0b7832f778c9">
 > Perfect Audio Works on GNU/Linux (Kubuntu, PAW v0.1.1)
