@@ -15,9 +15,9 @@ Currently, the player:
 ---
 
 ## Screenshots
-<img width="603" height="683" alt="image" src="https://github.com/user-attachments/assets/3e1724c2-f818-445c-ab12-88f765c396ee" />
+<img width="603" height="683" alt="image" src="https://github.com/user-attachments/assets/3e1724c2-f818-445c-ab12-88f765c396ee" /><br>
 > Perfect audio works on windows
-<img width="600" height="678" alt="image" src="https://github.com/user-attachments/assets/069ff9d5-5eee-4ea3-ab40-0b7832f778c9" />
+<img width="600" height="678" alt="image" src="https://github.com/user-attachments/assets/069ff9d5-5eee-4ea3-ab40-0b7832f778c9" /><br>
 > Perfect audio works on linux (Kubuntu)
 
 
