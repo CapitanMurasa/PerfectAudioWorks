@@ -221,6 +221,19 @@ if(WIN32)
     install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/platforms" DESTINATION bin)
     install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/styles" DESTINATION bin)
     install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/imageformats" DESTINATION bin)
+    set(PY_VER "3.14.0") 
+    set(PY_ZIP "python-${PY_VER}-embed-amd64.zip")
+    set(PY_URL "https://www.python.org/ftp/python/${PY_VER}/${PY_ZIP}")
+    set(PY_DIR "${CMAKE_BINARY_DIR}/python_embed")
+    
+    if(NOT EXISTS "${PY_DIR}")
+        file(DOWNLOAD "${PY_URL}" "${CMAKE_BINARY_DIR}/${PY_ZIP}")
+        file(ARCHIVE_EXTRACT INPUT "${CMAKE_BINARY_DIR}/${PY_ZIP}" DESTINATION "${PY_DIR}")
+    endif()
+    
+    install(DIRECTORY "${PY_DIR}/" 
+            DESTINATION bin 
+            FILES_MATCHING PATTERN "*.dll" PATTERN "*.zip" PATTERN "*.pyd")
 endif()
 
 if(UNIX AND NOT APPLE)
