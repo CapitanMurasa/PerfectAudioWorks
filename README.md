@@ -3,7 +3,6 @@
 ## About this program
 
 **PerfectAudioWorks** is an open-source media player inspired by the classic **Winamp design**.
-It is built with performance and simplicity in mind, while remaining modular for future expansion.
 
 Currently, the player:
 
@@ -14,6 +13,13 @@ Currently, the player:
 * Uses **Pyton** and **Pybind11** as core libs for plugin system
 
 ---
+
+## Screenshots
+<img width="603" height="683" alt="image" src="https://github.com/user-attachments/assets/3e1724c2-f818-445c-ab12-88f765c396ee" />
+> Perfect audio works on windows
+<img width="600" height="678" alt="image" src="https://github.com/user-attachments/assets/069ff9d5-5eee-4ea3-ab40-0b7832f778c9" />
+> Perfect audio works on linux (Kubuntu)
+
 
 ## Supported File Formats
 
