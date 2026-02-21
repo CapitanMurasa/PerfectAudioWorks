@@ -38,7 +38,7 @@ void Main_PAW_widget::SetupUIElements() {
     connect(ui->actionadd_files_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addFilesToPlaylist);
     connect(ui->actionadd_folders_to_playlist, &QAction::triggered, this, &Main_PAW_widget::on_actionAddFolder_triggered);
     connect(ui->actionadd_current_file_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addCurrentPlayingfileToPlaylist);
-    
+    connect(ui->actionShow_Details, &QAction::triggered, this, &Main_PAW_widget::showAboutTrackinfo);
     connect(ui->Stop, &QPushButton::clicked, this, &Main_PAW_widget::StopPlayback);
     connect(ui->PreviousTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayPreviousItem);
     connect(ui->NextTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayNextItem);
@@ -629,6 +629,23 @@ void Main_PAW_widget::showPlaylistContextMenu(const QPoint& pos) {
     }
 
     contextMenu.exec(ui->Playlist->mapToGlobal(pos));
+}
+
+void Main_PAW_widget::showAboutTrackinfo() {
+    if (!aboutfile) {
+        aboutfile = new Aboutfile_PAW_gui(this);
+    }
+
+    if (m_currentFile != nullptr) {
+        aboutfile->setdata(m_currentFile);
+
+        aboutfile->show();
+        aboutfile->raise();
+        aboutfile->activateWindow();
+    }
+    else {
+        QMessageBox::warning(this, "warning", "no song is playing right now");
+    }
 }
 
 void Main_PAW_widget::handleError(const QString& errorMessage) {
