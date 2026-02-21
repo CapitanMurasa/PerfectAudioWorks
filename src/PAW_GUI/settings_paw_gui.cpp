@@ -57,6 +57,7 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
     }
     else {
         settings["audio_device_index"] = -1;
+        settings["save_playlists"] = true;
         settings["auto_skip_tracks"] = true;
         settings["use_external_album_art"] = true;
         settings["use_plugins"] = false;
@@ -128,7 +129,7 @@ void Settings_PAW_gui::SetupJson() {
     int uiIdx = ui->audioDeviceComboBox->findData(savedIdx);
     if (uiIdx != -1) ui->audioDeviceComboBox->setCurrentIndex(uiIdx);
 
-    bool savePl = settings.value("save_playlists", false);
+    bool savePl = settings.value("save_playlists", true);
     ui->SavePlaylistsCheck->setChecked(savePl);
 
     bool autoSkip = settings.value("auto_skip_tracks", true);
