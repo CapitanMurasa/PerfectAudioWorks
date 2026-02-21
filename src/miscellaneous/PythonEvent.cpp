@@ -41,21 +41,15 @@ void PythonEventThread::unloadPlugin(const QString& filePath) {
         }
     }
 
-    try {
-        py::module_ sys = py::module_::import("sys");
-        std::string modName = QFileInfo(filePath).completeBaseName().toStdString();
-        if (sys.attr("modules").contains(modName)) {
-            sys.attr("modules").attr("pop")(modName);
-        }
 
-        py::module_ gc = py::module_::import("gc");
-        gc.attr("collect")();
-    }
-    catch (const std::exception& e) {
-        qWarning() << "Cleanup error during unload:" << e.what();
+    py::module_ sys = py::module_::import("sys");
+    std::string modName = QFileInfo(filePath).completeBaseName().toStdString();
+    if (sys.attr("modules").contains(modName)) {
+        sys.attr("modules").attr("pop")(modName);
     }
 
-    qDebug() << "Successfully unloaded:" << filePath;
+    py::module_ gc = py::module_::import("gc");
+    gc.attr("collect")();
 }
 
 void PythonEventThread::loadPluginAsync(const QString& filePath) {
