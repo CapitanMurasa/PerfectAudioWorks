@@ -1,25 +1,27 @@
 #pragma once
 #pragma push_macro("slots")
 #undef slots
-
 #include <pybind11/pybind11.h>
 #include <pybind11/functional.h> 
-
 #pragma pop_macro("slots")
 
 #include <QObject>
 #include <QTimer>
+#include <QString>
 #include <vector>
 #include "../PAW_GUI/Enums.h"
-#include "../AudioPharser/PortAudioHandler.h"
 
 class Main_PAW_widget;
+class PortaudioThread;
+class PythonEventThread; 
+extern PythonEventThread* global_pyevent;
 
 namespace py = pybind11;
 
 struct PythonCallback {
     py::function func;
     QTimer* timer;
+    QString ownerPath; 
 };
 
 class PythonEventThread : public QObject {
@@ -33,7 +35,9 @@ public:
 
 public slots:
     void loadPluginAsync(const QString& filePath);
+    void unloadPlugin(const QString& filePath); 
     void InitializePlugin(const QString& name);
+    void sendMessagebox(Messagetype type, QString message);
     void clearAllCallbacks();
 
 signals:
@@ -43,6 +47,7 @@ signals:
 private:
     bool openPluginInternal(const QString& filePath);
 
-    QString pluginname;
+    QString m_pluginName;        
+    QString m_currentLoadingPath; 
     std::vector<PythonCallback*> activeCallbacks;
 };

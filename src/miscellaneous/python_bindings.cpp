@@ -41,6 +41,15 @@ public:
         }
     }
 
+    void sendmessage(std::string message) {
+        if (global_pyevent) {
+            QMetaObject::invokeMethod(global_pyevent, "sendMessagebox",
+                Qt::QueuedConnection,
+                Q_ARG(Messagetype, PAW_INFO),
+                Q_ARG(QString, QString::fromStdString(message)));
+        }
+    }
+
     void registerUpdate(py::function callback, int interval_ms) {
         if (global_pyevent) {
             global_pyevent->registerCallback(callback, interval_ms);
@@ -81,13 +90,14 @@ public:
 };
 
 PYBIND11_EMBEDDED_MODULE(PAW_python, m) {
-    m.doc() = "PerfectAudioWorks Object API";
+    m.doc() = "PerfectAudioWorks API";
 
     py::class_<PAW_Interface>(m, "PAW")
         .def(py::init<>()) 
         .def("play", &PAW_Interface::playFile)
         .def("is_ready", &PAW_Interface::is_ready)
         .def("setInfo", &PAW_Interface::setInfo)
+        .def("SendMessageBox", &PAW_Interface::sendmessage)
         .def("register_update", &PAW_Interface::registerUpdate)
         .def("IsPlaybackActive", &PAW_Interface::isPlaybackActive)
         .def("GetTitle", &PAW_Interface::getTitle)

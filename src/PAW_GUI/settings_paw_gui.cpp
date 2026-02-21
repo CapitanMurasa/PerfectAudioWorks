@@ -181,18 +181,21 @@ void Settings_PAW_gui::addplugins() {
     }
 }
 
-void Settings_PAW_gui::reloadplugins(){
-    if (!usePlugins) {
-        return;
-    }
+void Settings_PAW_gui::reloadplugins() {
+    if (!usePlugins) return;
 
     QMetaObject::invokeMethod(m_pyWorker, "clearAllCallbacks", Qt::QueuedConnection);
 
+    QStringList pathsToReload;
     for (int i = 0; i < ui->PluginsList->count(); ++i) {
-        QString file = ui->PluginsList->item(i)->data(Qt::UserRole).toString();
+        pathsToReload << ui->PluginsList->item(i)->data(Qt::UserRole).toString();
+    }
+
+    ui->PluginsList->clear();
+
+    for (const QString& file : pathsToReload) {
         emit requestLoadPlugin(file);
     }
-        
 }
 
 void Settings_PAW_gui::deletePlugin() {
