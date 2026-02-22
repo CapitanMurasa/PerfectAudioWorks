@@ -133,7 +133,7 @@ Run the player:
 ---
 ## Plugins (EXPERIMENTAL SO FAR!!!)
 
-Since version 0.1.2 you can embed plugins to extend functionality of plugins:
+Since version 0.1.2 you can embed plugins to extend functionality of program:
 
 For example [discord rich presence plugin](https://github.com/CapitanMurasa/PAWDiscordPresencePlugin), which allows the program to indicate it's status inside your discord profile.
 
