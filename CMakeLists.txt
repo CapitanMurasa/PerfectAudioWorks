@@ -261,13 +261,16 @@ endif()
 
 if(UNIX AND NOT APPLE)
     set(CPACK_GENERATOR "DEB")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "CapitanMurasa")
-    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON) 
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "CapitanMurasa <vladislavkolodiy45@gmail.com>")
     set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "CapitanMurasa vladislavkolodiy45@gmail.com")
-    set(CPACK_PACKAGE_VENDOR "CapitanMurasa")
     set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/CapitanMurasa/PerfectAudioWorks")
-    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE") 
+    set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+    
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3.14") 
+    
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 endif()
 
 include(CPack)
