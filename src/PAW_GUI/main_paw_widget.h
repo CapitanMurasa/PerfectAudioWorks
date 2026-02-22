@@ -12,7 +12,8 @@
 
 #include "../AudioPharser/PortAudioHandler.h" 
 #include "../miscellaneous/file.h" 
-#include "../miscellaneous/json.h" 
+#include "../miscellaneous/json.h"
+#include "../miscellaneous/DatabaseManager.h"
 
 #include "settings_paw_gui.h"
 #include "about_paw_gui.h"
@@ -25,6 +26,7 @@ class Main_PAW_widget;
 QT_END_NAMESPACE
 
 class Settings_PAW_gui;
+class DatabaseManager;
 
 class Main_PAW_widget : public QMainWindow
 {
@@ -87,6 +89,7 @@ private:
     About_PAW_gui *about;
     JsonLoader loader;
     QSystemTrayIcon *trayIcon;
+    DatabaseManager *database;
     float currentDuration;
     float totalDuration;
 

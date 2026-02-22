@@ -72,6 +72,9 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
     about = new About_PAW_gui(this);
+    QTimer::singleShot(0, this, [this]() {
+        database = new DatabaseManager(this);
+        });
 
     if (!loader.load_jsonfile(settings, "settings.json")) {
         settings = nlohmann::json::object();
@@ -474,8 +477,10 @@ void Main_PAW_widget::addFilesToPlaylist() {
     QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus *.m4a *.aac);;All Files (*)");
 
     for (const QString& file : files) {
+        database->FillRow(file);
         if (saveplaylist) {
             std::string stdPath = file.toStdString();
+
 
             if (std::find(playlist.begin(), playlist.end(), stdPath) == playlist.end()) {
                 playlist.push_back(stdPath);

@@ -51,6 +51,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    /*
 #if WIN32
     wchar_t buffer[MAX_PATH];
     GetModuleFileNameW(NULL, buffer, MAX_PATH);
@@ -63,6 +64,7 @@ int main(int argc, char* argv[]) {
 
     Py_SetPythonHome(executable_dir.c_str());
 #endif
+    */
 
     py::scoped_interpreter guard{};
 
