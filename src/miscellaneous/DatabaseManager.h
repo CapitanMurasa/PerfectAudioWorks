@@ -12,6 +12,7 @@ public:
     ~DatabaseManager();
 
     void FillRow(QString path);
+    void LoadRow(QString path);
 
 private:
     Main_PAW_widget* mainwidget;
