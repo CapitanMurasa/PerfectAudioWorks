@@ -37,12 +37,12 @@ public slots:
     void loadPluginAsync(const QString& filePath);
     void unloadPlugin(const QString& filePath); 
     void InitializePlugin(const QString& name);
-    void sendMessagebox(Messagetype type, QString message);
+    void sendMessagebox(Messagetype type, QString title, QString message);
     void clearAllCallbacks();
 
 signals:
     void pluginLoadFinished(bool success, QString filePath, QString fileName, QString pluginName);
-    void RequestMessageBox(Messagetype type, QString message);
+    void RequestMessageBox(Messagetype type, QString title,QString message);
 
 private:
     bool openPluginInternal(const QString& filePath);

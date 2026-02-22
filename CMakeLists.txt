@@ -216,11 +216,22 @@ include(GNUInstallDirs)
 install(TARGETS PAW RUNTIME DESTINATION bin)
 
 if(WIN32)
+    get_filename_component(PYTHON_UCRT_ROOT "${Python3_INCLUDE_DIRS}/../../" ABSOLUTE)
+
+    message(STATUS "Detected Python UCRT Root: ${PYTHON_UCRT_ROOT}")
+
+
     set(KNOWN_GOOD_BIN_DIR "${CMAKE_SOURCE_DIR}/out/install/UCRT64-Release/bin")
     install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/" DESTINATION bin FILES_MATCHING PATTERN "*.dll")
-    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/platforms" DESTINATION bin)
-    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/styles" DESTINATION bin)
-    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/imageformats" DESTINATION bin)
+    
+
+    install(DIRECTORY "${PYTHON_UCRT_ROOT}/lib/python3.14" 
+            DESTINATION bin/lib 
+            PATTERN "__pycache__" EXCLUDE
+            PATTERN "test" EXCLUDE
+            PATTERN "site-packages" EXCLUDE)
+            
+    install(FILES "${PYTHON_UCRT_ROOT}/bin/libpython3.14.dll" DESTINATION bin)
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -250,13 +261,16 @@ endif()
 
 if(UNIX AND NOT APPLE)
     set(CPACK_GENERATOR "DEB")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "CapitanMurasa")
-    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON) 
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "CapitanMurasa <vladislavkolodiy45@gmail.com>")
     set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "CapitanMurasa vladislavkolodiy45@gmail.com")
-    set(CPACK_PACKAGE_VENDOR "CapitanMurasa")
     set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/CapitanMurasa/PerfectAudioWorks")
-    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE") 
+    set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+    
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3.14") 
+    
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 endif()
 
 include(CPack)

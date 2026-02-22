@@ -92,7 +92,7 @@ bool PythonEventThread::openPluginInternal(const QString& filePath) {
         return true;
     }
     catch (py::error_already_set& e) {
-        emit RequestMessageBox(PAW_ERROR, QString::fromStdString(e.what()));
+        emit RequestMessageBox(PAW_ERROR, "Plugin loading error", QString::fromStdString(e.what()));
         m_currentLoadingPath = "";
         return false;
     }
@@ -118,6 +118,6 @@ void PythonEventThread::registerCallback(py::function callback, int interval_ms)
     activeCallbacks.push_back(cb);
 }
 
-void PythonEventThread::sendMessagebox(Messagetype type, QString message) {
-    emit RequestMessageBox(type, message);
+void PythonEventThread::sendMessagebox(Messagetype type, QString title, QString message) {
+    emit RequestMessageBox(type, title, message);
 }

@@ -8,6 +8,9 @@ About_PAW_gui::About_PAW_gui(QWidget *parent)
 {
     ui->setupUi(this);
 
+    QPixmap pixmap(":/assets/paw.ico");
+    ui->logoLabel->setPixmap(pixmap);
+
 }
 
 About_PAW_gui::~About_PAW_gui()

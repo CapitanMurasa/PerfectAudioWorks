@@ -56,7 +56,15 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
         SetupJson();
     }
     else {
-        qWarning() << "No settings found, starting with defaults.";
+        settings["audio_device_index"] = -1;
+        settings["save_playlists"] = true;
+        settings["auto_skip_tracks"] = true;
+        settings["use_external_album_art"] = true;
+        settings["use_plugins"] = false;
+
+        loader.save_config(settings, "settings.json");
+
+        SetupJson();
     }
 
     if (!loader.load_jsonfile(pluginsList, "plugins.json")) {
@@ -117,30 +125,27 @@ void Settings_PAW_gui::SetupQtActions() {
 }
 
 void Settings_PAW_gui::SetupJson() {
-    if (settings.contains("audio_device_index")) {
-        int savedIdx = settings["audio_device_index"].get<int>();
-        int uiIdx = ui->audioDeviceComboBox->findData(savedIdx);
-        if (uiIdx != -1) ui->audioDeviceComboBox->setCurrentIndex(uiIdx);
+    int savedIdx = settings.value("audio_device_index", -1);
+    int uiIdx = ui->audioDeviceComboBox->findData(savedIdx);
+    if (uiIdx != -1){
+        ui->audioDeviceComboBox->setCurrentIndex(uiIdx);
+        m_audiothread->changeAudioDevice(uiIdx);
     }
 
-    if (settings.contains("save_playlists") && settings["save_playlists"].is_boolean()) {
-        ui->SavePlaylistsCheck->setChecked(settings["save_playlists"].get<bool>());
-    }
+    bool savePl = settings.value("save_playlists", true);
+    ui->SavePlaylistsCheck->setChecked(savePl);
 
-    bool autoSkip = true;
-    if (settings.contains("auto_skip_tracks")) autoSkip = settings["auto_skip_tracks"].get<bool>();
+    bool autoSkip = settings.value("auto_skip_tracks", true);
     ui->AutoSkipTracks->setChecked(autoSkip);
     if (mainwidget) mainwidget->CanAutoSwitch = autoSkip;
 
-    bool useExtArt = true;
-    if (settings.contains("use_external_album_art")) useExtArt = settings["use_external_album_art"].get<bool>();
+    bool useExtArt = settings.value("use_external_album_art", true);
     ui->UseExternalAlbumArt->setChecked(useExtArt);
     setCanUseExternalAlbumart(useExtArt);
 
-    bool UsePlugins = false;
-    if (settings.contains("use_plugins")) UsePlugins = settings["use_plugins"].get<bool>();
-    ui->enablePLuginsSupportCheckBox->setChecked(UsePlugins);
-    usePlugins = UsePlugins;
+    bool usePlugs = settings.value("use_plugins", false);
+    ui->enablePLuginsSupportCheckBox->setChecked(usePlugs);
+    this->usePlugins = usePlugs;
 }
 
 void Settings_PAW_gui::applySettings() {
@@ -165,7 +170,7 @@ void Settings_PAW_gui::applySettings() {
     usePlugins = UsePlugins;
 
     loader.save_config(settings, "settings.json");
-    qDebug() << "Settings applied and saved.";
+    ShowMessageBox(PAW_INFO, "Settings applied", "Settings applied and saved.");
 }
 
 void Settings_PAW_gui::addplugins() {
@@ -309,16 +314,16 @@ void Settings_PAW_gui::addPluginsfromJson() {
     }
 }
 
-void Settings_PAW_gui::ShowMessageBox(Messagetype type, QString message) {
+void Settings_PAW_gui::ShowMessageBox(Messagetype type, QString title, QString message) {
     switch (type) {
     case PAW_WARNING:
-        QMessageBox::warning(this, "message from plugin", message);
+        QMessageBox::warning(this, title, message);
         break;
     case PAW_ERROR:
-        QMessageBox::critical(this, "message from plugin", message);
+        QMessageBox::critical(this, title, message);
         break;
     case PAW_INFO:
-        QMessageBox::information(this, "message from plugin", message);
+        QMessageBox::information(this, title, message);
         break;
     }
 }

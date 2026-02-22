@@ -9,7 +9,8 @@
 #include <QDir>
 #include <QMessageBox>
 #include <QLocalServer> 
-#include <QLocalSocket>  
+#include <QLocalSocket>
+#include <algorithm>
 
 namespace py = pybind11;
 
@@ -17,7 +18,7 @@ Main_PAW_widget* global_paw_widget = nullptr;
 PortaudioThread* global_audiothread = nullptr;
 
 #ifdef Q_OS_LINUX
-#include "PAW_GUI/GlobalLinuxKeys.h"
+//#include "PAW_GUI/GlobalLinuxKeys.h"
 #include <QDBusConnection>
 #endif
 
@@ -49,6 +50,19 @@ int main(int argc, char* argv[]) {
         }
         return 0;
     }
+
+#if WIN32
+    wchar_t buffer[MAX_PATH];
+    GetModuleFileNameW(NULL, buffer, MAX_PATH);
+    std::wstring full_path(buffer);
+
+    size_t pos = full_path.find_last_of(L"\\/");
+    std::wstring executable_dir = full_path.substr(0, pos);
+
+    std::replace(executable_dir.begin(), executable_dir.end(), L'\\', L'/');
+
+    Py_SetPythonHome(executable_dir.c_str());
+#endif
 
     py::scoped_interpreter guard{};
 
@@ -111,6 +125,7 @@ int main(int argc, char* argv[]) {
 
     py::gil_scoped_release release;
 
+/*
 #ifdef Q_OS_LINUX
     LinuxKeys* keys = new LinuxKeys(&w);
     QObject::connect(keys, &LinuxKeys::playPauseRequested, &w, &Main_PAW_widget::PlayPauseButton);
@@ -122,6 +137,7 @@ int main(int argc, char* argv[]) {
     bus.registerService("org.mpris.MediaPlayer2.perfectaudioworks");
     bus.registerObject("/org/mpris/MediaPlayer2", &w);
 #endif
+*/
 
     QStringList args = QCoreApplication::arguments();
     if (args.count() > 1) {

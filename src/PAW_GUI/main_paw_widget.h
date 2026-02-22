@@ -64,6 +64,7 @@ private slots:
     void SetLoop();
     void SetVolumeFromSlider(int value);
     void addCurrentPlayingfileToPlaylist();
+    void showAboutTrackinfo();
     
     void handlePlaybackProgress(int currentFrame, int totalFrames, int sampleRate);
     void handleTotalFileInfo(int totalFrames,int channels, int sampleRate, const char* codecname);
