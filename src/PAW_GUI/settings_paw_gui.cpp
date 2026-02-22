@@ -127,7 +127,10 @@ void Settings_PAW_gui::SetupQtActions() {
 void Settings_PAW_gui::SetupJson() {
     int savedIdx = settings.value("audio_device_index", -1);
     int uiIdx = ui->audioDeviceComboBox->findData(savedIdx);
-    if (uiIdx != -1) ui->audioDeviceComboBox->setCurrentIndex(uiIdx);
+    if (uiIdx != -1){
+        ui->audioDeviceComboBox->setCurrentIndex(uiIdx);
+        m_audiothread->changeAudioDevice(uiIdx);
+    }
 
     bool savePl = settings.value("save_playlists", true);
     ui->SavePlaylistsCheck->setChecked(savePl);
