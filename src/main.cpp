@@ -50,7 +50,8 @@ int main(int argc, char* argv[]) {
         }
         return 0;
     }
-
+    
+#if WIN32
     wchar_t buffer[MAX_PATH];
     GetModuleFileNameW(NULL, buffer, MAX_PATH);
     std::wstring full_path(buffer);
@@ -61,6 +62,7 @@ int main(int argc, char* argv[]) {
     std::replace(executable_dir.begin(), executable_dir.end(), L'\\', L'/');
 
     Py_SetPythonHome(executable_dir.c_str());
+#endif
 
     py::scoped_interpreter guard{};
 
