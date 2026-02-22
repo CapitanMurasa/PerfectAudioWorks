@@ -216,24 +216,22 @@ include(GNUInstallDirs)
 install(TARGETS PAW RUNTIME DESTINATION bin)
 
 if(WIN32)
+    get_filename_component(PYTHON_UCRT_ROOT "${Python3_INCLUDE_DIRS}/../../" ABSOLUTE)
+
+    message(STATUS "Detected Python UCRT Root: ${PYTHON_UCRT_ROOT}")
+
+
     set(KNOWN_GOOD_BIN_DIR "${CMAKE_SOURCE_DIR}/out/install/UCRT64-Release/bin")
     install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/" DESTINATION bin FILES_MATCHING PATTERN "*.dll")
-    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/platforms" DESTINATION bin)
-    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/styles" DESTINATION bin)
-    install(DIRECTORY "${KNOWN_GOOD_BIN_DIR}/imageformats" DESTINATION bin)
-    set(PY_VER "3.14.0") 
-    set(PY_ZIP "python-${PY_VER}-embed-amd64.zip")
-    set(PY_URL "https://www.python.org/ftp/python/${PY_VER}/${PY_ZIP}")
-    set(PY_DIR "${CMAKE_BINARY_DIR}/python_embed")
     
-    if(NOT EXISTS "${PY_DIR}")
-        file(DOWNLOAD "${PY_URL}" "${CMAKE_BINARY_DIR}/${PY_ZIP}")
-        file(ARCHIVE_EXTRACT INPUT "${CMAKE_BINARY_DIR}/${PY_ZIP}" DESTINATION "${PY_DIR}")
-    endif()
-    
-    install(DIRECTORY "${PY_DIR}/" 
-            DESTINATION bin 
-            FILES_MATCHING PATTERN "*.dll" PATTERN "*.zip" PATTERN "*.pyd")
+
+    install(DIRECTORY "${PYTHON_UCRT_ROOT}/lib/python3.14" 
+            DESTINATION bin/lib 
+            PATTERN "__pycache__" EXCLUDE
+            PATTERN "test" EXCLUDE
+            PATTERN "site-packages" EXCLUDE)
+            
+    install(FILES "${PYTHON_UCRT_ROOT}/bin/libpython3.14.dll" DESTINATION bin)
 endif()
 
 if(UNIX AND NOT APPLE)

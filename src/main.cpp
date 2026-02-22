@@ -9,7 +9,8 @@
 #include <QDir>
 #include <QMessageBox>
 #include <QLocalServer> 
-#include <QLocalSocket>  
+#include <QLocalSocket>
+#include <algorithm>
 
 namespace py = pybind11;
 
@@ -49,6 +50,17 @@ int main(int argc, char* argv[]) {
         }
         return 0;
     }
+
+    wchar_t buffer[MAX_PATH];
+    GetModuleFileNameW(NULL, buffer, MAX_PATH);
+    std::wstring full_path(buffer);
+
+    size_t pos = full_path.find_last_of(L"\\/");
+    std::wstring executable_dir = full_path.substr(0, pos);
+
+    std::replace(executable_dir.begin(), executable_dir.end(), L'\\', L'/');
+
+    Py_SetPythonHome(executable_dir.c_str());
 
     py::scoped_interpreter guard{};
 
