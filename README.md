@@ -10,7 +10,7 @@ Currently, the player:
 * Uses **Qt6** for rendering the UI.
 * Uses **Libtag** to pharse album art and metadata info
 * Uses **nlohmann/json** to manipulate with json files
-* Uses **Pyton** and **Pybind11** as core libs for plugin system
+* Uses **Python** and **Pybind11** as core libs for plugin system
 
 ---
 
