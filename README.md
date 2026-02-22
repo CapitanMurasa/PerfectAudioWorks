@@ -86,8 +86,6 @@ sudo dnf install cmake gcc-c++ make qt6-qtbase-devel \
                  portaudio-devel libsndfile-devel mpg123-devel
 ```
 
-Cloning & Building
-
 ### Windows
 Although windows release is out, it still less stable than linux release <br>
 install qt framework from [qt's official site](https://www.qt.io/download-dev) <br>
@@ -150,7 +148,7 @@ player = paw.PAW()
 
 # checking if playback is active 
 if player.IsPlaybackActive():
-# displaying message box with info
+# display message box with Title Artist and Album info about track that is currently playing.
     player.SendMessageBox(f"Playing: {player.GetTitle()}\nBy: {player.GetArtist()}\n In Album: {player.GetAlbum()}")
 ```
 
