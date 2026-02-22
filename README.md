@@ -139,7 +139,26 @@ For example [discord rich presence plugin](https://github.com/CapitanMurasa/PAWD
 
 ### How to write one?
 
-Well... Wait for the documentation for it...
+Here are some basics using python
+
+```python
+# importing PAW module to python
+import PAW_python as paw
+
+#assigning class to variable
+player = paw.PAW()
+
+# checking if playback is active 
+if player.IsPlaybackActive():
+# displaying message box with info
+    player.SendMessageBox(f"Playing: {player.GetTitle()}\nBy: {player.GetArtist()}\n In Album: {player.GetAlbum()}")
+```
+
+as in result it displays us a message box with a basic information about song that is currently playing.
+
+<img width="1337" height="777" alt="image" src="https://github.com/user-attachments/assets/9cb7d0af-d16a-406c-908c-7b2272360419" />
+
+further information about usage will be in docs soon...
 
 ## Known Bugs
 
