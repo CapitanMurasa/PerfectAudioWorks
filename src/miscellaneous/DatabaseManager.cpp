@@ -56,14 +56,14 @@ void DatabaseManager::createUnifiedSchema() {
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
         "name TEXT UNIQUE NOT NULL)");
 
+    query.exec("CREATE TABLE IF NOT EXISTS genres ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "name TEXT UNIQUE NOT NULL)");
+
     query.exec("CREATE TABLE IF NOT EXISTS albums ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
         "title TEXT UNIQUE NOT NULL, "
-        "genre TEXT, "
-        "artist_id INTEGER, "
-        "cover_image BLOB, "
-        "FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE, "
-        "UNIQUE(title, artist_id))");
+        "cover_image BLOB)");
 
     query.exec("CREATE TABLE IF NOT EXISTS tracks ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -71,8 +71,10 @@ void DatabaseManager::createUnifiedSchema() {
         "title TEXT, "
         "bitrate INTEGER, "
         "artist_id INTEGER, "
+        "genre_id INTEGER, "
         "album_id INTEGER, "
         "FOREIGN KEY(artist_id) REFERENCES artists(id), "
+        "FOREIGN KEY(genre_id) REFERENCES genres(id), "
         "FOREIGN KEY(album_id) REFERENCES albums(id))");
 
     query.exec("CREATE TABLE IF NOT EXISTS playlists ("
@@ -133,6 +135,16 @@ void DatabaseManager::FillRow(QString path) {
 
     QSqlQuery query(db);
 
+    query.prepare("INSERT OR IGNORE INTO genres (name) VALUES (:name)");
+    query.bindValue(":name", genre);
+    query.exec();
+
+    query.prepare("SELECT id FROM genres WHERE name = :name");
+    query.bindValue(":name", genre);
+    query.exec();
+    int genreId = -1;
+    if (query.next()) genreId = query.value(0).toInt();
+
     query.prepare("INSERT OR IGNORE INTO artists (name) VALUES (:name)");
     query.bindValue(":name", artist);
     query.exec();
@@ -143,10 +155,9 @@ void DatabaseManager::FillRow(QString path) {
     int artistId = -1;
     if (query.next()) artistId = query.value(0).toInt();
 
-    query.prepare("INSERT OR IGNORE INTO albums (title, genre, artist_id, cover_image) VALUES (:title, :genre, :artist_id, :cover)");
+    query.prepare("INSERT OR IGNORE INTO albums (title, cover_image) VALUES (:title, :cover)");
     query.bindValue(":title", album);
     query.bindValue(":genre", genre); 
-    query.bindValue(":artist_id", artistId);
 
     if (coverBlob.isEmpty()) {
         query.bindValue(":cover", QVariant(QMetaType::fromType<QByteArray>()));
@@ -156,18 +167,19 @@ void DatabaseManager::FillRow(QString path) {
     }
     query.exec();
 
-    query.prepare("SELECT id FROM albums WHERE title = :title AND artist_id = :artist_id");
+    query.prepare("SELECT id FROM albums WHERE title = :title");
     query.bindValue(":title", album);
-    query.bindValue(":artist_id", artistId);
     query.exec();
     int albumId = -1;
     if (query.next()) albumId = query.value(0).toInt();
+    qDebug() << albumId;
 
     
-    query.prepare("INSERT OR REPLACE INTO tracks (path, title, bitrate, artist_id, album_id) "
-        "VALUES (:path, :title, :bitrate, :artist_id, :album_id)");
+    query.prepare("INSERT OR REPLACE INTO tracks (path, title, bitrate, genre_id, artist_id, album_id) "
+        "VALUES (:path, :title, :bitrate, :genre_id, :artist_id, :album_id)");
     query.bindValue(":path", path);
     query.bindValue(":title", title);
+    query.bindValue(":genre_id", genreId);
     query.bindValue(":bitrate", (metadata_result == 0) ? info.bitrate : 0);
     query.bindValue(":artist_id", artistId);
     query.bindValue(":album_id", albumId);
@@ -188,5 +200,5 @@ void DatabaseManager::FillRow(QString path) {
 }
 
 void DatabaseManager::LoadRow(QString path) {
-
+    //quer
 }
