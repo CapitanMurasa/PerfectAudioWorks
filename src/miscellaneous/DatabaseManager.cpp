@@ -58,7 +58,7 @@ void DatabaseManager::createUnifiedSchema() {
 
     query.exec("CREATE TABLE IF NOT EXISTS albums ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "title TEXT NOT NULL, "
+        "title TEXT UNIQUE NOT NULL, "
         "genre TEXT, "
         "artist_id INTEGER, "
         "cover_image BLOB, "
