@@ -249,6 +249,8 @@ void Main_PAW_widget::startPendingTrack() {
 void Main_PAW_widget::LoadMetadatafromfile() {
     QString filename = m_currentFile;
 
+    TrackData trackInfo = database->LoadRow(m_currentFile);
+
     file_info_current = { 0 };
     int metadata_result = -1;
 

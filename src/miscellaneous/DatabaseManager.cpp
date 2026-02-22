@@ -199,6 +199,45 @@ void DatabaseManager::FillRow(QString path) {
     FileInfo_cleanup(&info);
 }
 
-void DatabaseManager::LoadRow(QString path) {
-    //quer
+TrackData DatabaseManager::LoadRow(QString path) {
+    TrackData data;
+    QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
+    if (!db.transaction()) {
+        qCritical() << "Failed to start database transaction:" << db.lastError().text();
+        return data;
+    }
+
+    QSqlQuery query(db);
+
+    query.prepare("SELECT * from tracks WHERE path = :path");
+    query.bindValue(":path", path);
+
+    if (query.exec() && query.next()) {
+        data.title = query.value(2).toString();
+        data.bitrate = query.value(3).toInt();
+        data.artist = query.value(4).toString();
+        data.album = query.value(6).toString();
+        //data.coverImage = query.value(5).toByteArray();
+        data.genre = query.value(5).toString();
+        data.found = true;
+
+        qDebug() << data.title;
+        qDebug() << data.bitrate;
+        qDebug() << data.artist;
+        qDebug() << data.album;
+        qDebug() << data.genre;
+    }
+    else {
+        qDebug() << "Track not found in database for path:" << path;
+    }
+
+    if (!db.commit()) {
+        qCritical() << "Failed to commit track data to disk:" << db.lastError().text();
+        db.rollback();
+    }
+    else {
+        qDebug() << "Track inserted/updated successfully!";
+    }
+
+    return data;
 }
