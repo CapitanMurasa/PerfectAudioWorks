@@ -54,6 +54,7 @@ Currently, the player:
 * `LibTag`
 * `nlohmann/json`
 * `pybind11`
+* `Python (version 3.14)`
 * Optional codecs:
 
   * `libsndfile` (WAV, FLAC, OGG, Opus)
