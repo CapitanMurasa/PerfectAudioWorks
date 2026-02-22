@@ -247,20 +247,57 @@ void Main_PAW_widget::startPendingTrack() {
 }
 
 void Main_PAW_widget::LoadMetadatafromfile() {
+    QString title, artist, album, genre;
+    bool artFound = false;
+    QPixmap coverArt;
     QString filename = m_currentFile;
+    FileInfo info = { 0 };
+    int metadata_result = -1;
+
+#ifdef _WIN32
+    std::wstring w_filePath = filename.toStdWString();
+    metadata_result = get_metadata_w(w_filePath.c_str(), &info);
+#else
+    QByteArray utf8_filePath = filename.toUtf8();
+    metadata_result = get_metadata(utf8_filePath.constData(), &info);
+#endif
 
     TrackData trackInfo = database->LoadRow(m_currentFile);
+    if (trackInfo.title.isEmpty()) {
+        title = (metadata_result == 0 && info.title && strlen(info.title) > 0)
+            ? QString::fromUtf8(info.title) : filename.section('/', -1);
 
-    bool loaded = m_originalAlbumArt.loadFromData(trackInfo.coverImage, "JPG");
+        artist = (metadata_result == 0 && info.artist && strlen(info.artist) > 0)
+            ? QString::fromUtf8(info.artist) : "Unknown Artist";
+
+        album = (metadata_result == 0 && info.album && strlen(info.album) > 0)
+            ? QString::fromUtf8(info.album) : "Unknown Album";
+
+        genre = (metadata_result == 0 && info.genre && strlen(info.genre) > 0)
+            ? QString::fromUtf8(info.genre) : "Unknown Genre";
+
+        if (file_info_current.cover_image && file_info_current.cover_size > 0) {
+            if (coverArt.loadFromData(file_info_current.cover_image, file_info_current.cover_size)) {
+                artFound = true;
+            }
+        }
+
+        m_originalAlbumArt = artFound ? coverArt : QPixmap();
+    }
+    else {
+        title = trackInfo.title;
+        artist = trackInfo.artist;
+        album = trackInfo.album;
+        genre = trackInfo.genre;
+        m_originalAlbumArt.loadFromData(trackInfo.coverImage, "JPG");
+    }
+
+ 
     this->setWindowTitle(trackInfo.artist + " - " + trackInfo.title);
     ui->Filename->setText(trackInfo.title);
     ui->Artist->setText(trackInfo.artist);
-    if (loaded) {
-        ui->AlbumArt->setPixmap(m_originalAlbumArt);
-    }
-    else {
-        qDebug() << "Failed to load pixmap from byte array.";
-    }
+    ui->AlbumArt->setPixmap(m_originalAlbumArt);
+
     updateAlbumArt();
 
 }
@@ -439,10 +476,18 @@ void Main_PAW_widget::ClearUi() {
 }
 
 void Main_PAW_widget::addFilesToPlaylist() {
+    FileInfo info;
     QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus *.m4a *.aac);;All Files (*)");
 
     for (const QString& file : files) {
-        database->FillRow(file);
+#ifdef _WIN32
+        std::wstring w_filePath = file.toStdWString();
+        get_metadata_w(w_filePath.c_str(), &info);
+#else
+        QByteArray utf8_filePath = file.toUtf8();
+        get_metadata(utf8_filePath.constData(), &info);
+#endif
+        database->FillRow(info , file);
         if (saveplaylist) {
             std::string stdPath = file.toStdString();
 

@@ -98,66 +98,42 @@ void DatabaseManager::createUnifiedSchema() {
     }
 }
 
-void DatabaseManager::FillRow(QString path) {
+void DatabaseManager::FillRow(FileInfo file, QString path) {
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
     if (!db.transaction()) {
         qCritical() << "Failed to start database transaction:" << db.lastError().text();
         return;
     }
 
-    FileInfo info = { 0 };
-    int metadata_result = -1;
-
-#ifdef _WIN32
-    std::wstring w_filePath = path.toStdWString();
-    metadata_result = get_metadata_w(w_filePath.c_str(), &info);
-#else
-    QByteArray utf8_filePath = path.toUtf8();
-    metadata_result = get_metadata(utf8_filePath.constData(), &info);
-#endif
-
-    QString title = (metadata_result == 0 && info.title && strlen(info.title) > 0)
-        ? QString::fromUtf8(info.title) : path.section('/', -1);
-
-    QString artist = (metadata_result == 0 && info.artist && strlen(info.artist) > 0)
-        ? QString::fromUtf8(info.artist) : "Unknown Artist";
-
-    QString album = (metadata_result == 0 && info.album && strlen(info.album) > 0)
-        ? QString::fromUtf8(info.album) : "Unknown Album";
-
-    QString genre = (metadata_result == 0 && info.genre && strlen(info.genre) > 0)
-        ? QString::fromUtf8(info.genre) : "Unknown Genre";
-
     QByteArray coverBlob;
-    if (metadata_result == 0 && info.cover_image && info.cover_size > 0) {
-        coverBlob = QByteArray(reinterpret_cast<const char*>(info.cover_image), info.cover_size);
+    if (file.cover_image && file.cover_size > 0) {
+        coverBlob = QByteArray(reinterpret_cast<const char*>(file.cover_image), file.cover_size);
     }
 
     QSqlQuery query(db);
 
     query.prepare("INSERT OR IGNORE INTO genres (name) VALUES (:name)");
-    query.bindValue(":name", genre);
+    query.bindValue(":name", QString::fromStdString(file.genre));
     query.exec();
 
     query.prepare("SELECT id FROM genres WHERE name = :name");
-    query.bindValue(":name", genre);
+    query.bindValue(":name", QString::fromStdString(file.genre));
     query.exec();
     int genreId = -1;
     if (query.next()) genreId = query.value(0).toInt();
 
     query.prepare("INSERT OR IGNORE INTO artists (name) VALUES (:name)");
-    query.bindValue(":name", artist);
+    query.bindValue(":name", QString::fromStdString(file.artist));
     query.exec();
 
     query.prepare("SELECT id FROM artists WHERE name = :name");
-    query.bindValue(":name", artist);
+    query.bindValue(":name", QString::fromStdString(file.artist));
     query.exec();
     int artistId = -1;
     if (query.next()) artistId = query.value(0).toInt();
 
     query.prepare("INSERT OR IGNORE INTO albums (title, cover_image) VALUES (:title, :cover)");
-    query.bindValue(":title", album);
-    query.bindValue(":genre", genre); 
+    query.bindValue(":title", QString::fromStdString(file.album));
 
     if (coverBlob.isEmpty()) {
         query.bindValue(":cover", QVariant(QMetaType::fromType<QByteArray>()));
@@ -168,7 +144,7 @@ void DatabaseManager::FillRow(QString path) {
     query.exec();
 
     query.prepare("SELECT id FROM albums WHERE title = :title");
-    query.bindValue(":title", album);
+    query.bindValue(":title", QString::fromStdString(file.album));
     query.exec();
     int albumId = -1;
     if (query.next()) albumId = query.value(0).toInt();
@@ -178,9 +154,9 @@ void DatabaseManager::FillRow(QString path) {
     query.prepare("INSERT OR REPLACE INTO tracks (path, title, bitrate, genre_id, artist_id, album_id) "
         "VALUES (:path, :title, :bitrate, :genre_id, :artist_id, :album_id)");
     query.bindValue(":path", path);
-    query.bindValue(":title", title);
+    query.bindValue(":title", QString::fromStdString(file.title));
     query.bindValue(":genre_id", genreId);
-    query.bindValue(":bitrate", (metadata_result == 0) ? info.bitrate : 0);
+    query.bindValue(":bitrate",  file.bitrate);
     query.bindValue(":artist_id", artistId);
     query.bindValue(":album_id", albumId);
 
@@ -196,11 +172,32 @@ void DatabaseManager::FillRow(QString path) {
         qDebug() << "Track inserted/updated successfully!";
     }
 
-    FileInfo_cleanup(&info);
+    FileInfo_cleanup(&file);
 }
 
 void DatabaseManager::InflatePlaylist(QString path) {
+    int TrackId = -1;
+    QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
+    if (!db.transaction()) {
+        qCritical() << "Failed to start database transaction:" << db.lastError().text();
+        return;
+    }
 
+    QSqlQuery query(db);
+
+    query.prepare("SELECT id from tracks WHERE path = :path");
+    query.bindValue(":path", path);
+    if (query.exec() && query.next()) {
+        TrackId = query.value(0).toInt();
+    }
+
+    if (!db.commit()) {
+        qCritical() << "Failed to commit track data to disk:" << db.lastError().text();
+        db.rollback();
+    }
+    else {
+        qDebug() << "Track inserted/updated successfully!";
+    }
 }
 TrackData DatabaseManager::LoadRow(QString path) {
     TrackData data;

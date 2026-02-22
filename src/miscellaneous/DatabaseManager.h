@@ -22,7 +22,7 @@ public:
     DatabaseManager(QObject* parent = nullptr);
     ~DatabaseManager();
 
-    void FillRow(QString path);
+    void FillRow(FileInfo file, QString path);
     TrackData LoadRow(QString path);
     void InflatePlaylist(QString path);
 
