@@ -251,55 +251,18 @@ void Main_PAW_widget::LoadMetadatafromfile() {
 
     TrackData trackInfo = database->LoadRow(m_currentFile);
 
-    file_info_current = { 0 };
-    int metadata_result = -1;
-
-#ifdef _WIN32
-    std::wstring w_filePath = filename.toStdWString();
-    metadata_result = get_metadata_w(w_filePath.c_str(), &file_info_current);
-#else
-    QByteArray utf8_filePath = filename.toUtf8();
-    metadata_result = get_metadata(utf8_filePath.constData(), &file_info_current);
-#endif
-
-    if (metadata_result == 0) {
-        QPixmap coverArt;
-        bool artFound = false;
-
-        QString title = (file_info_current.title && strlen(file_info_current.title) > 0)
-            ? QString::fromUtf8(file_info_current.title)
-            : filename.section('/', -1);
-
-        QString artist = (file_info_current.artist && strlen(file_info_current.artist) > 0)
-            ? QString::fromUtf8(file_info_current.artist)
-            : "";
-
-        if (file_info_current.cover_image && file_info_current.cover_size > 0) {
-            if (coverArt.loadFromData(file_info_current.cover_image, file_info_current.cover_size)) {
-                artFound = true;
-            }
-        }
-
-        if (file_info_current.bitrate > 0) {
-            ui->BitrateInfo->setText(QString::number(file_info_current.bitrate) + " kbps");
-        }
-        else {
-            ui->BitrateInfo->setText("");
-        }
-
-        FileInfo_cleanup(&file_info_current);
-
-        m_originalAlbumArt = artFound ? coverArt : QPixmap();
-        this->setWindowTitle(artist + " - " + title);
-        ui->Filename->setText(title);
-        ui->Artist->setText(artist);
+    bool loaded = m_originalAlbumArt.loadFromData(trackInfo.coverImage, "JPG");
+    this->setWindowTitle(trackInfo.artist + " - " + trackInfo.title);
+    ui->Filename->setText(trackInfo.title);
+    ui->Artist->setText(trackInfo.artist);
+    if (loaded) {
+        ui->AlbumArt->setPixmap(m_originalAlbumArt);
     }
     else {
-        ui->Filename->setText(filename.section('/', -1));
-        ui->Artist->setText("");
-        m_originalAlbumArt = QPixmap();
+        qDebug() << "Failed to load pixmap from byte array.";
     }
     updateAlbumArt();
+
 }
 
 void Main_PAW_widget::updateAlbumArt()
@@ -509,27 +472,12 @@ void Main_PAW_widget::addFilesToPlaylistfromJson() {
 }
 
 void Main_PAW_widget::ProcessFilesList(const QString& file) {
-    FileInfo file_info;
-    int metadata_result = -1;
+    TrackData trackInfo = database->LoadRow(file);
     QString displayText;
 
-#ifdef _WIN32
-    std::wstring w_filePath = file.toStdWString();
-    metadata_result = get_metadata_w(w_filePath.c_str(), &file_info);
-#else
-    QByteArray utf8_filePath = file.toUtf8();
-    metadata_result = get_metadata(utf8_filePath.constData(), &file_info);
-#endif
+    displayText = trackInfo.artist.isEmpty() ? 
+        trackInfo.title : trackInfo.artist + " - " + trackInfo.title;
 
-    if (metadata_result == 0) {
-        QString title = (strlen(file_info.title) > 0) ? QString::fromUtf8(file_info.title) : QFileInfo(file).fileName();
-        QString artist = (strlen(file_info.artist) > 0) ? QString::fromUtf8(file_info.artist) : "";
-        displayText = artist.isEmpty() ? title : artist + " - " + title;
-        FileInfo_cleanup(&file_info);
-    }
-    else {
-        displayText = QFileInfo(file).fileName();
-    }
 
     QListWidgetItem* item = new QListWidgetItem(displayText);
     item->setData(Qt::UserRole, file);

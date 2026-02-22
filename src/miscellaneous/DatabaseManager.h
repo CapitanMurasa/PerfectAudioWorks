@@ -24,6 +24,7 @@ public:
 
     void FillRow(QString path);
     TrackData LoadRow(QString path);
+    void InflatePlaylist(QString path);
 
 private:
     Main_PAW_widget* mainwidget;

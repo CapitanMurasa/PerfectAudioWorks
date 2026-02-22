@@ -199,6 +199,9 @@ void DatabaseManager::FillRow(QString path) {
     FileInfo_cleanup(&info);
 }
 
+void DatabaseManager::InflatePlaylist(QString path) {
+
+}
 TrackData DatabaseManager::LoadRow(QString path) {
     TrackData data;
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
@@ -213,19 +216,37 @@ TrackData DatabaseManager::LoadRow(QString path) {
     query.bindValue(":path", path);
 
     if (query.exec() && query.next()) {
-        data.title = query.value(2).toString();
-        data.bitrate = query.value(3).toInt();
-        data.artist = query.value(4).toString();
-        data.album = query.value(6).toString();
-        //data.coverImage = query.value(5).toByteArray();
-        data.genre = query.value(5).toString();
         data.found = true;
 
-        qDebug() << data.title;
-        qDebug() << data.bitrate;
-        qDebug() << data.artist;
-        qDebug() << data.album;
-        qDebug() << data.genre;
+        data.title = query.value(2).toString();
+        data.bitrate = query.value(3).toInt();
+        int artistId = query.value(4).toInt();
+        int genreId = query.value(5).toInt();
+        int albumId = query.value(6).toInt();
+
+        query.prepare("SELECT * from artists WHERE id = :artist");
+        query.bindValue(":artist", artistId);
+        if (query.exec() && query.next()) { 
+            data.artist = query.value(1).toString();
+        }
+
+        query.prepare("SELECT * from albums WHERE id = :album");
+        query.bindValue(":album", albumId);
+        if (query.exec() && query.next()) {
+            data.album = query.value(1).toString();
+            data.coverImage = query.value(2).toByteArray();
+        }
+
+        query.prepare("SELECT * from genres WHERE id = :genre");
+        query.bindValue(":genre", genreId);
+        if (query.exec() && query.next()) {
+            data.genre = query.value(1).toString();
+        }
+
+        qDebug() << "Title:" << data.title;
+        qDebug() << "Artist:" << data.artist;
+        qDebug() << "Album:" << data.album;
+        qDebug() << "Genre:" << data.genre;
     }
     else {
         qDebug() << "Track not found in database for path:" << path;
