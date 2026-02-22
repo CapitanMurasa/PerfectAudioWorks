@@ -124,26 +124,22 @@
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout_2">
-     <item row="5" column="1">
-      <spacer name="verticalSpacer">
-       <property name="orientation">
-        <enum>Qt::Orientation::Vertical</enum>
+     <item row="3" column="1">
+      <widget class="QLabel" name="CurrentFileDuration">
+       <property name="font">
+        <font>
+         <pointsize>20</pointsize>
+         <bold>true</bold>
+        </font>
        </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="4" column="1">
-      <widget class="QLabel" name="TotalFileDuration">
        <property name="text">
-        <string>XX:XX</string>
+        <string>00:00</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+       </property>
+       <property name="margin">
+        <number>20</number>
        </property>
       </widget>
      </item>
@@ -176,26 +172,30 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
-      <widget class="QLabel" name="CurrentFileDuration">
-       <property name="font">
-        <font>
-         <pointsize>20</pointsize>
-         <bold>true</bold>
-        </font>
+     <item row="6" column="1">
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
        </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLabel" name="TotalFileDuration">
        <property name="text">
-        <string>00:00</string>
+        <string>XX:XX</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
        </property>
-       <property name="margin">
-        <number>20</number>
-       </property>
       </widget>
      </item>
-     <item row="1" column="0" rowspan="5">
+     <item row="1" column="0" rowspan="6">
       <widget class="QLabel" name="AlbumArt">
        <property name="minimumSize">
         <size>
@@ -220,88 +220,114 @@
        </property>
       </widget>
      </item>
+     <item row="5" column="1">
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Samplerate:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Bitrate:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>Codec:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLabel" name="CodecProcessorinfo">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>Channels:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="SampleRateinfo">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QLabel" name="BitrateInfo">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QLabel" name="ChannelsInfo">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
     </layout>
    </widget>
    <widget class="QWidget" name="verticalLayoutWidget">
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>320</y>
+      <y>330</y>
       <width>601</width>
-      <height>251</height>
+      <height>291</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <item>
+        <widget class="QPushButton" name="pushButton">
+         <property name="text">
+          <string>Playlist</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Search:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QKeySequenceEdit" name="keySequenceEdit"/>
+       </item>
+      </layout>
+     </item>
+     <item>
       <widget class="QListWidget" name="Playlist"/>
-     </item>
-    </layout>
-   </widget>
-   <widget class="QWidget" name="gridLayoutWidget_2">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>570</y>
-      <width>601</width>
-      <height>51</height>
-     </rect>
-    </property>
-    <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Samplerate:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="2">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Bitrate:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Codec:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLabel" name="CodecProcessorinfo">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="2">
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>Channels:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLabel" name="SampleRateinfo">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="3">
-      <widget class="QLabel" name="BitrateInfo">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="3">
-      <widget class="QLabel" name="ChannelsInfo">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
      </item>
     </layout>
    </widget>

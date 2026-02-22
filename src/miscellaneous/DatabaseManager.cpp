@@ -186,3 +186,7 @@ void DatabaseManager::FillRow(QString path) {
 
     FileInfo_cleanup(&info);
 }
+
+void DatabaseManager::LoadRow(QString path) {
+
+}
