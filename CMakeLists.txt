@@ -44,6 +44,7 @@ set(SOURCES
     src/PAW_GUI/main_paw_widget.ui
     src/PAW_GUI/main_paw_widget.cpp
     src/PAW_GUI/playlist_paw_manager.ui
+    src/PAW_GUI/playlist_paw_manager.cpp
     
     src/PAW_GUI/ScrollingLabel.h
     src/PAW_GUI/ScrollingLabel.cpp
