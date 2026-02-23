@@ -156,6 +156,11 @@ static int audio_start_common(AudioPlayer* player, int device) {
 #ifdef _WIN32
 int audio_play_w(AudioPlayer* player, const wchar_t* filename_w, int device) {
     if (!player || !filename_w) return -1;
+
+    if (player->stream != NULL || player->decoderThreadHandle != 0) {
+        audio_stop(player);
+    }
+
     player->codec = codec_open_w(filename_w);
     if (!player->codec) return -1;
 
@@ -172,6 +177,11 @@ int audio_play_w(AudioPlayer* player, const wchar_t* filename_w, int device) {
 #else
 int audio_play(AudioPlayer* player, const char* filename, int device) {
     if (!player || !filename) return -1;
+
+    if (player->stream != NULL || player->decoderThreadHandle != 0) {
+        audio_stop(player);
+    }
+
     player->filename = filename; // 
     player->codec = codec_open(player->filename);
     if (!player->codec) return -1;
