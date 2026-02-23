@@ -480,28 +480,22 @@ void Main_PAW_widget::addFilesToPlaylist() {
     QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus *.m4a *.aac);;All Files (*)");
 
     for (const QString& file : files) {
+        if (!database->TrackExists(file)) {
+            FileInfo info = { 0 };
 #ifdef _WIN32
-        std::wstring w_filePath = file.toStdWString();
-        get_metadata_w(w_filePath.c_str(), &info);
+            std::wstring w_filePath = file.toStdWString();
+            get_metadata_w(w_filePath.c_str(), &info);
 #else
-        QByteArray utf8_filePath = file.toUtf8();
-        get_metadata(utf8_filePath.constData(), &info);
+            QByteArray utf8_filePath = file.toUtf8();
+            get_metadata(utf8_filePath.constData(), &info);
 #endif
-        database->FillRow(info , file);
-        if (saveplaylist) {
-            std::string stdPath = file.toStdString();
-
-
-            if (std::find(playlist.begin(), playlist.end(), stdPath) == playlist.end()) {
-                playlist.push_back(stdPath);
+            database->FillRow(info, file);
+            if (saveplaylist) {
+                database->InflatePlaylist(file, "test");
             }
+
+            ProcessFilesList(file);
         }
-
-        ProcessFilesList(file);
-    }
-
-    if (saveplaylist) {
-        loader.save_config(playlist, "playlist.json");
     }
 }
 

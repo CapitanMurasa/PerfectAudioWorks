@@ -24,7 +24,8 @@ public:
 
     void FillRow(FileInfo file, QString path);
     TrackData LoadRow(QString path);
-    void InflatePlaylist(QString path);
+    void InflatePlaylist(QString path, QString playlist);
+    bool TrackExists(QString path);
 
 private:
     Main_PAW_widget* mainwidget;

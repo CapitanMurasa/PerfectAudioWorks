@@ -175,8 +175,7 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
     FileInfo_cleanup(&file);
 }
 
-void DatabaseManager::InflatePlaylist(QString path) {
-    int TrackId = -1;
+void DatabaseManager::InflatePlaylist(QString path, QString playlistName) {
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
     if (!db.transaction()) {
         qCritical() << "Failed to start database transaction:" << db.lastError().text();
@@ -185,27 +184,55 @@ void DatabaseManager::InflatePlaylist(QString path) {
 
     QSqlQuery query(db);
 
+    int TrackId = -1;
     query.prepare("SELECT id from tracks WHERE path = :path");
     query.bindValue(":path", path);
     if (query.exec() && query.next()) {
         TrackId = query.value(0).toInt();
     }
 
+    if (TrackId == -1) {
+        qCritical() << "Cannot add track to playlist: Track not in database.";
+        db.rollback();
+        return;
+    }
+
+    query.prepare("INSERT OR IGNORE INTO playlists (name) VALUES (:name)");
+    query.bindValue(":name", playlistName);
+    query.exec();
+
+    query.prepare("SELECT id FROM playlists WHERE name = :name");
+    query.bindValue(":name", playlistName);
+    query.exec();
+    int playlistId = -1;
+    if (query.next()) playlistId = query.value(0).toInt();
+
+    query.prepare("INSERT OR REPLACE INTO playlist_items (playlist_id, track_id) VALUES (:playlist_id, :track_id)");
+    query.bindValue(":playlist_id", playlistId);
+    query.bindValue(":track_id", TrackId);
+
+    if (!query.exec()) {
+        qCritical() << "Failed to add to playlist_items:" << query.lastError().text();
+    }
+
     if (!db.commit()) {
-        qCritical() << "Failed to commit track data to disk:" << db.lastError().text();
         db.rollback();
     }
     else {
-        qDebug() << "Track inserted/updated successfully!";
+        qDebug() << "Track added to playlist successfully!";
     }
 }
+
+bool DatabaseManager::TrackExists(QString path) {
+    QSqlQuery query(QSqlDatabase::database("PAW_CONNECTION"));
+    query.prepare("SELECT id from tracks WHERE path = :path");
+    query.bindValue(":path", path);
+    return (query.exec() && query.next());
+}
+
 TrackData DatabaseManager::LoadRow(QString path) {
     TrackData data;
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
-    if (!db.transaction()) {
-        qCritical() << "Failed to start database transaction:" << db.lastError().text();
-        return data;
-    }
 
     QSqlQuery query(db);
 
@@ -247,14 +274,6 @@ TrackData DatabaseManager::LoadRow(QString path) {
     }
     else {
         qDebug() << "Track not found in database for path:" << path;
-    }
-
-    if (!db.commit()) {
-        qCritical() << "Failed to commit track data to disk:" << db.lastError().text();
-        db.rollback();
-    }
-    else {
-        qDebug() << "Track inserted/updated successfully!";
     }
 
     return data;
