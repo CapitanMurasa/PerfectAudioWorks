@@ -48,7 +48,7 @@ public:
     QString returnTimeElapsed();
     QString returnTimeStamp();
     QString m_currentFile;
-    int CurrentPlaylistId;
+    int CurrentPlaylistId = -1;
 
     bool CanAutoSwitch = true;
 
@@ -119,7 +119,6 @@ private:
     bool saveplaylist;
 
     json settings;
-    json playlist;
 
     Ui::Main_PAW_widget *ui; 
 };

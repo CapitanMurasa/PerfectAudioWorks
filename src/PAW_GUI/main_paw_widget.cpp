@@ -102,19 +102,6 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
         });
 #endif
 
-    if (saveplaylist) {
-        if (!loader.load_jsonfile(playlist, "playlist.json")) {
-            playlist = nlohmann::json::array();
-            qDebug() << "Playlist file missing, initialized empty array.";
-        }
-        else {
-            addFilesToPlaylistfromJson();
-        }
-    }
-    else {
-        playlist = nlohmann::json::array();
-    }
-
 
     SetupUIElements();
     SetupQtActions();
@@ -159,17 +146,10 @@ void Main_PAW_widget::dropEvent(QDropEvent* event) {
                 ProcessFilesList(filePath);
 
                 if (saveplaylist) {
-                    std::string stdPath = filePath.toStdString();
-                    if (std::find(playlist.begin(), playlist.end(), stdPath) == playlist.end()) {
-                        playlist.push_back(stdPath);
-                    }
+                    ProcessFilesList(filePath);
                 }
             }
         }
-    }
-
-    if (saveplaylist) {
-        loader.save_config(playlist, "playlist.json");
     }
 }
 
@@ -183,17 +163,10 @@ void Main_PAW_widget::addFolderToPlaylist(const QString& folderPath) {
         QString filePath = it.next();
 
         if (saveplaylist) {
-            std::string stdPath = filePath.toStdString();
-            if (std::find(playlist.begin(), playlist.end(), stdPath) == playlist.end()) {
-                playlist.push_back(stdPath);
-            }
+            database->InflatePlaylist(filePath, CurrentPlaylistId);
         }
 
         ProcessFilesList(filePath);
-    }
-
-    if (saveplaylist) {
-        loader.save_config(playlist, "playlist.json");
     }
 }
 
@@ -388,23 +361,11 @@ void Main_PAW_widget::addCurrentPlayingfileToPlaylist() {
     }
 
     if (saveplaylist) {
-        std::string stdPath = m_currentFile.toStdString();
-        bool alreadyExists = false;
-
-        for (const auto& item : playlist) {
-            if (item.get<std::string>() == stdPath) {
-                alreadyExists = true;
-                break;
-            }
+     
+        if (saveplaylist && CurrentPlaylistId != -1) {
+            database->InflatePlaylist(m_currentFile, CurrentPlaylistId);
         }
-
-        if (alreadyExists) {
-            QMessageBox::information(this, "Info", "Track is already in the playlist.");
-            return;
-        }
-
-        playlist.push_back(stdPath);
-        loader.save_config(playlist, "playlist.json");
+        
     }
 
     ProcessFilesList(m_currentFile);
@@ -496,7 +457,7 @@ void Main_PAW_widget::addFilesToPlaylist() {
 #endif
             database->FillRow(info, file);
             if (saveplaylist) {
-                database->InflatePlaylist(file, "test");
+                database->InflatePlaylist(file, CurrentPlaylistId);
             }
 
             ProcessFilesList(file);
@@ -507,24 +468,34 @@ void Main_PAW_widget::addFilesToPlaylist() {
 void Main_PAW_widget::addFilesToPlaylistfromJson() {
     ui->Playlist->clear();
 
-    if (playlist.is_array()) {
-        for (const auto& item : playlist) {
-            QString file = QString::fromStdString(item.get<std::string>());
-            ProcessFilesList(file);
-        }
-    }
+
 }
 
 void Main_PAW_widget::ProcessFilesList(const QString& file) {
-    TrackData trackInfo = database->LoadRow(file);
-    QString displayText;
+    FileInfo info = { 0 };
+    int metadata_result = -1;
 
-    displayText = trackInfo.artist.isEmpty() ? 
+    TrackData trackInfo = database->LoadRow(file);
+
+    if (trackInfo.title.isEmpty()) {
+        FileInfo info = { 0 };
+
+#ifdef _WIN32
+        std::wstring w_filePath = file.toStdWString();
+        metadata_result = get_metadata_w(w_filePath.c_str(), &info);
+#else
+        QByteArray utf8_filePath = filename.toUtf8();
+        metadata_result = get_metadata(utf8_filePath.constData(), &info);
+#endif
+        database->FillRow(info, file);
+        trackInfo = database->LoadRow(file);
+    }
+
+    QString displayText = trackInfo.artist.isEmpty() ?
         trackInfo.title : trackInfo.artist + " - " + trackInfo.title;
 
-
     QListWidgetItem* item = new QListWidgetItem(displayText);
-    item->setData(Qt::UserRole, file);
+    item->setData(Qt::UserRole, file); 
     ui->Playlist->addItem(item);
 }
 
@@ -579,14 +550,8 @@ void Main_PAW_widget::deleteSelectedItem()
         QListWidgetItem* itemToDelete = ui->Playlist->item(currentRow);
         if (itemToDelete == currentItemPlaying) {
             currentItemPlaying = nullptr;
-            StopPlayback(); 
         }
 
-
-        if (playlist.is_array() && currentRow < playlist.size()) {
-            loader.RemoveItemByIndex(playlist, currentRow);
-            loader.save_config(playlist, "playlist.json");
-        }
 
         delete ui->Playlist->takeItem(currentRow);
     }
