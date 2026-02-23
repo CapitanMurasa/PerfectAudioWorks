@@ -86,6 +86,10 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     saveplaylist = settings.value("save_playlists", true);
     CanAutoSwitch = settings.value("auto_skip_tracks", true);
 
+    if (saveplaylist) {
+        addFilesToPlaylistfromDatabase();
+    }
+
 #ifdef _WIN32
     GlobalKeys::instance().install();
 
@@ -361,10 +365,7 @@ void Main_PAW_widget::addCurrentPlayingfileToPlaylist() {
     }
 
     if (saveplaylist) {
-     
-        if (saveplaylist && CurrentPlaylistId != -1) {
-            database->InflatePlaylist(m_currentFile, CurrentPlaylistId);
-        }
+        database->InflatePlaylist(m_currentFile, CurrentPlaylistId);
         
     }
 
@@ -465,9 +466,19 @@ void Main_PAW_widget::addFilesToPlaylist() {
     }
 }
 
-void Main_PAW_widget::addFilesToPlaylistfromJson() {
+void Main_PAW_widget::addFilesToPlaylistfromDatabase() {
     ui->Playlist->clear();
 
+    QList<TrackData> tracklist = database->LoadPlaylist(CurrentPlaylistId);
+
+    for (TrackData& trackInfo : tracklist) {
+        QString displayText = trackInfo.artist.isEmpty() ?
+            trackInfo.title : trackInfo.artist + " - " + trackInfo.title;
+
+        QListWidgetItem* item = new QListWidgetItem(displayText);
+        item->setData(Qt::UserRole, trackInfo.path);
+        ui->Playlist->addItem(item);
+    }
 
 }
 

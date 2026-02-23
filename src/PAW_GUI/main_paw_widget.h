@@ -48,7 +48,7 @@ public:
     QString returnTimeElapsed();
     QString returnTimeStamp();
     QString m_currentFile;
-    int CurrentPlaylistId = -1;
+    int CurrentPlaylistId = 1;
 
     bool CanAutoSwitch = true;
 
@@ -106,7 +106,7 @@ private:
     void LoadMetadatafromfile();
     QString returnItemPath();
     void ProcessFilesList(const QString& file);
-    void addFilesToPlaylistfromJson();
+    void addFilesToPlaylistfromDatabase();
     void ClearUi();
 
     void dragEnterEvent(QDragEnterEvent* event) override;

@@ -224,8 +224,36 @@ void DatabaseManager::InflatePlaylist(QString path, int requestedId) {
     }
 }
 
-void DatabaseManager::LoadPlaylist(int playlistid) {
+QList<TrackData> DatabaseManager::LoadPlaylist(int playlistid) {
+    QList<TrackData> tracklist;
+    QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
+    QSqlQuery query(db);
 
+    query.prepare("SELECT t.id, t.path, t.title, a.name "
+        "FROM tracks t "
+        "INNER JOIN playlist_items pi ON t.id = pi.track_id "
+        "LEFT JOIN artists a ON t.artist_id = a.id "
+        "WHERE pi.playlist_id = :pid "
+        "ORDER BY pi.track_id ASC"); 
+
+    query.bindValue(":pid", playlistid);
+
+    if (query.exec()) {
+        while (query.next()) {
+            TrackData data;
+            data.id = query.value(0).toInt();
+            data.path = query.value(1).toString();
+            data.title = query.value(2).toString();
+            data.artist = query.value(3).toString(); 
+
+            tracklist.append(data);
+        }
+    }
+    else {
+        qCritical() << "LoadPlaylist failed:" << query.lastError().text();
+    }
+
+    return tracklist;
 }
 
 void DatabaseManager::AddPlaylist(QString playlistname) {

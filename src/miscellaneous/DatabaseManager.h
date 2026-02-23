@@ -6,6 +6,8 @@
 class Main_PAW_widget;
 
 struct TrackData {
+    int id;
+    QString path;
     QString title;
     QString artist;
     QString album;
@@ -33,8 +35,8 @@ public:
     QString FetchPlaylist(int id);
     QList<Playlistdata> FetchPlaylists();
     void InflatePlaylist(QString path, int playlistid);
-    void LoadPlaylist(int playlistid);
     bool TrackExists(QString path);
+    QList<TrackData> LoadPlaylist(int playlistid);
 
 private:
     Main_PAW_widget* mainwidget;
