@@ -10,11 +10,27 @@ Playlist_Paw_Manager::Playlist_Paw_Manager(DatabaseManager* db, Main_PAW_widget*
 {
 	ui->setupUi(this);
 
+	if (database) {
+		FetchPlaylists();
+	}
+
 	connect(ui->AddPlaylist, &QPushButton::clicked, this, &Playlist_Paw_Manager::Add_Playlist);
 }
 
 Playlist_Paw_Manager::~Playlist_Paw_Manager() {
 	delete ui;
+}
+
+void Playlist_Paw_Manager::FetchPlaylists() {
+    ui->listWidget->clear();
+
+    QList<Playlistdata> allPlaylists = database->FetchPlaylists();
+
+    for (const Playlistdata& p : allPlaylists) {
+        QListWidgetItem* item = new QListWidgetItem(p.Name, ui->listWidget);
+
+        item->setData(Qt::UserRole, p.id);
+    }
 }
 
 void Playlist_Paw_Manager::Add_Playlist() {
@@ -24,6 +40,8 @@ void Playlist_Paw_Manager::Add_Playlist() {
 		"your playlist name here...", &ok);
 
 	if (ok && !text.isEmpty()) {
-	
+		database->AddPlaylist(text.trimmed());
 	}
+	FetchPlaylists();
+
 }

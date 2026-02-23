@@ -1,6 +1,7 @@
 #pragma once
 
 #include "main_paw_widget.h"
+#include "../miscellaneous/DatabaseManager.h"
 #include "ui_playlist_paw_manager.h"
 #include "../miscellaneous/DatabaseManager.h"
 #include <QDialog>
@@ -21,4 +22,5 @@ private:
     DatabaseManager *database;
 
     void Add_Playlist();
+    void FetchPlaylists();
 };

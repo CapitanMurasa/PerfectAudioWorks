@@ -15,6 +15,11 @@ struct TrackData {
     bool found = false;
 };
 
+struct Playlistdata {
+    int id;
+    QString Name;
+};
+
 class DatabaseManager : public QObject {
     Q_OBJECT
 public:
@@ -24,6 +29,9 @@ public:
 
     void FillRow(FileInfo file, QString path);
     TrackData LoadRow(QString path);
+    void AddPlaylist(QString playlistname);
+    QString FetchPlaylist(int id);
+    QList<Playlistdata> FetchPlaylists();
     void InflatePlaylist(QString path, QString playlist);
     bool TrackExists(QString path);
 

@@ -223,6 +223,56 @@ void DatabaseManager::InflatePlaylist(QString path, QString playlistName) {
     }
 }
 
+void DatabaseManager::AddPlaylist(QString playlistname) {
+    QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
+    if (!db.transaction()) {
+        qCritical() << "Failed to start database transaction:" << db.lastError().text();
+        return;
+    }
+
+    QSqlQuery query(db);
+
+    query.prepare("INSERT or IGNORE INTO playlists (name) VALUES (:name)");
+    query.bindValue(":name", playlistname);
+    query.exec();
+
+
+    if (!db.commit()) {
+        db.rollback();
+    }
+    else {
+        qDebug() << "Playlist Added";
+    }
+}
+
+QString DatabaseManager::FetchPlaylist(int id) {
+    QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
+
+    QSqlQuery query(db);
+
+    query.prepare("SELECT name FROM playlists WHERE id = (:id)");
+    query.bindValue(":id", id);
+    if (query.exec() && query.next()) {
+        return query.value(0).toString();
+    }
+
+    return QString();
+}
+
+QList<Playlistdata> DatabaseManager::FetchPlaylists() {
+    QList<Playlistdata> list;
+    QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
+    QSqlQuery query("SELECT id, name FROM playlists", db);
+
+    while (query.next()) {
+        Playlistdata data;
+        data.id = query.value(0).toInt();
+        data.Name = query.value(1).toString();
+        list.append(data);
+    }
+    return list;
+}
+
 bool DatabaseManager::TrackExists(QString path) {
     QSqlQuery query(QSqlDatabase::database("PAW_CONNECTION"));
     query.prepare("SELECT id from tracks WHERE path = :path");
