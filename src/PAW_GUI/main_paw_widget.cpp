@@ -175,14 +175,15 @@ void Main_PAW_widget::addFolderToPlaylist(const QString& folderPath) {
 }
 
 
-void Main_PAW_widget::start_playback(const QString & filename) {
+void Main_PAW_widget::start_playback(const QString& filename) {
     m_currentFile = filename;
 
-    currentItemPlaying = nullptr;
+    if (currentItemPlaying) {
+        QFont normalFont = ui->Playlist->font();
+        currentItemPlaying->setFont(normalFont);
+    }
 
-    QFont normalFont = ui->Playlist->font();
-    QFont boldFont = normalFont;
-    boldFont.setBold(true);
+    currentItemPlaying = nullptr;
 
     for (int i = 0; i < ui->Playlist->count(); ++i) {
         QListWidgetItem* item = ui->Playlist->item(i);
@@ -190,11 +191,13 @@ void Main_PAW_widget::start_playback(const QString & filename) {
         if (item->data(Qt::UserRole).toString() == filename) {
             currentItemPlaying = item;
 
+            QFont boldFont = ui->Playlist->font();
+            boldFont.setBold(true);
+            item->setFont(boldFont);
+
             ui->Playlist->setCurrentItem(item);
-            item->setFont(boldFont); 
-        }
-        else {
-            item->setFont(normalFont);
+
+            break;
         }
     }
 
@@ -210,7 +213,6 @@ void Main_PAW_widget::start_playback(const QString & filename) {
         startPendingTrack();
     }
 }
-
 
 void Main_PAW_widget::startPendingTrack() {
     disconnect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
@@ -467,6 +469,10 @@ void Main_PAW_widget::addFilesToPlaylist() {
 }
 
 void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {
+    CurrentPlaylistId = id;
+
+    ui->Playlist->setUpdatesEnabled(false);
+
     ui->Playlist->clear();
 
     QList<TrackData> tracklist = database->LoadPlaylist(id);
@@ -480,6 +486,7 @@ void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {
         ui->Playlist->addItem(item);
     }
 
+    ui->Playlist->setUpdatesEnabled(true);
 }
 
 void Main_PAW_widget::ProcessFilesList(const QString& file) {
