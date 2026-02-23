@@ -35,6 +35,7 @@ public:
     QString FetchPlaylist(int id);
     QList<Playlistdata> FetchPlaylists();
     void InflatePlaylist(QString path, int playlistid);
+    void RemoveFromPlaylist(QString path, int playlistId);
     bool TrackExists(QString path);
     QList<TrackData> LoadPlaylist(int playlistid);
 

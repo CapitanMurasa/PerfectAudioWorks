@@ -306,6 +306,31 @@ QList<Playlistdata> DatabaseManager::FetchPlaylists() {
     return list;
 }
 
+void DatabaseManager::RemoveFromPlaylist(QString path, int playlistId) {
+    QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
+    QSqlQuery query(db);
+
+    int trackDbId = -1;
+    query.prepare("SELECT id FROM tracks WHERE path = :path");
+    query.bindValue(":path", path);
+    if (query.exec() && query.next()) {
+        trackDbId = query.value(0).toInt();
+    }
+
+    if (trackDbId != -1) {
+        query.prepare("DELETE FROM playlist_items WHERE playlist_id = :pid AND track_id = :tid");
+        query.bindValue(":pid", playlistId);
+        query.bindValue(":tid", trackDbId);
+
+        if (!query.exec()) {
+            qCritical() << "Failed to remove item from playlist:" << query.lastError().text();
+        }
+        else {
+            qDebug() << "Track removed from database playlist successfully.";
+        }
+    }
+}
+
 bool DatabaseManager::TrackExists(QString path) {
     QSqlQuery query(QSqlDatabase::database("PAW_CONNECTION"));
     query.prepare("SELECT id from tracks WHERE path = :path");

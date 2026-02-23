@@ -42,6 +42,7 @@ public:
     void PlayNextItem();
     void StopPlayback();
     void PlayPauseButton();
+    void addFilesToPlaylistfromDatabase(int id);
 
     FileInfo file_info_current;
 
@@ -106,7 +107,6 @@ private:
     void LoadMetadatafromfile();
     QString returnItemPath();
     void ProcessFilesList(const QString& file);
-    void addFilesToPlaylistfromDatabase();
     void ClearUi();
 
     void dragEnterEvent(QDragEnterEvent* event) override;

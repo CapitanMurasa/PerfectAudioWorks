@@ -40,9 +40,8 @@ void Playlist_Paw_Manager::LoadPlaylist() {
 
     if (item) {
         int id = item->data(Qt::UserRole).toInt();
-
 		parentwidget->CurrentPlaylistId = id;
-
+		parentwidget->addFilesToPlaylistfromDatabase(id);
     }
 }
 

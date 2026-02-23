@@ -87,7 +87,7 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     CanAutoSwitch = settings.value("auto_skip_tracks", true);
 
     if (saveplaylist) {
-        addFilesToPlaylistfromDatabase();
+        addFilesToPlaylistfromDatabase(CurrentPlaylistId);
     }
 
 #ifdef _WIN32
@@ -166,11 +166,11 @@ void Main_PAW_widget::addFolderToPlaylist(const QString& folderPath) {
     while (it.hasNext()) {
         QString filePath = it.next();
 
+        ProcessFilesList(filePath);
+
         if (saveplaylist) {
             database->InflatePlaylist(filePath, CurrentPlaylistId);
         }
-
-        ProcessFilesList(filePath);
     }
 }
 
@@ -466,10 +466,10 @@ void Main_PAW_widget::addFilesToPlaylist() {
     }
 }
 
-void Main_PAW_widget::addFilesToPlaylistfromDatabase() {
+void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {
     ui->Playlist->clear();
 
-    QList<TrackData> tracklist = database->LoadPlaylist(CurrentPlaylistId);
+    QList<TrackData> tracklist = database->LoadPlaylist(id);
 
     for (TrackData& trackInfo : tracklist) {
         QString displayText = trackInfo.artist.isEmpty() ?
@@ -557,12 +557,22 @@ void Main_PAW_widget::deleteSelectedItem()
 
     if (currentRow >= 0)
     {
-
         QListWidgetItem* itemToDelete = ui->Playlist->item(currentRow);
-        if (itemToDelete == currentItemPlaying) {
-            currentItemPlaying = nullptr;
+        QString filePath = itemToDelete->data(Qt::UserRole).toString();
+
+        if (saveplaylist && CurrentPlaylistId != -1) {
+            database->RemoveFromPlaylist(filePath, CurrentPlaylistId);
         }
 
+        if (itemToDelete == currentItemPlaying) {
+            PlayNextItem();
+
+
+            if (itemToDelete == currentItemPlaying) {
+                StopPlayback();
+                currentItemPlaying = nullptr;
+            }
+        }
 
         delete ui->Playlist->takeItem(currentRow);
     }
