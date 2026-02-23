@@ -20,7 +20,9 @@ public:
 private:
     Ui::PlaylistManager* ui;
     DatabaseManager *database;
+    Main_PAW_widget *parentwidget;
 
+    void LoadPlaylist();
     void Add_Playlist();
     void FetchPlaylists();
 };

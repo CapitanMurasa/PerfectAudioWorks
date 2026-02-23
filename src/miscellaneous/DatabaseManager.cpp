@@ -175,7 +175,7 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
     FileInfo_cleanup(&file);
 }
 
-void DatabaseManager::InflatePlaylist(QString path, QString playlistName) {
+void DatabaseManager::InflatePlaylist(QString path, int playlistid) {
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
     if (!db.transaction()) {
         qCritical() << "Failed to start database transaction:" << db.lastError().text();
@@ -197,15 +197,24 @@ void DatabaseManager::InflatePlaylist(QString path, QString playlistName) {
         return;
     }
 
-    query.prepare("INSERT OR IGNORE INTO playlists (name) VALUES (:name)");
-    query.bindValue(":name", playlistName);
-    query.exec();
 
-    query.prepare("SELECT id FROM playlists WHERE name = :name");
-    query.bindValue(":name", playlistName);
-    query.exec();
     int playlistId = -1;
-    if (query.next()) playlistId = query.value(0).toInt();
+
+    query.exec("SELECT id FROM playlists LIMIT 1");
+
+    if (query.next()) {
+        query.prepare("SELECT id FROM playlists WHERE id = :id");
+        query.bindValue(":id", playlistid);
+        if (query.exec() && query.next()) {
+            playlistId = query.value(0).toInt();
+        }
+    }
+    else {
+        if (query.exec("INSERT INTO playlists (name) VALUES ('Default Playlist')")) {
+            playlistId = query.lastInsertId().toInt();
+            qDebug() << "Created default playlist with ID:" << playlistId;
+        }
+    }
 
     query.prepare("INSERT OR REPLACE INTO playlist_items (playlist_id, track_id) VALUES (:playlist_id, :track_id)");
     query.bindValue(":playlist_id", playlistId);
@@ -221,6 +230,10 @@ void DatabaseManager::InflatePlaylist(QString path, QString playlistName) {
     else {
         qDebug() << "Track added to playlist successfully!";
     }
+}
+
+void DatabaseManager::LoadPlaylist(int playlistid) {
+
 }
 
 void DatabaseManager::AddPlaylist(QString playlistname) {

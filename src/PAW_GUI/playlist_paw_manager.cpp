@@ -10,6 +10,8 @@ Playlist_Paw_Manager::Playlist_Paw_Manager(DatabaseManager* db, Main_PAW_widget*
 {
 	ui->setupUi(this);
 
+	parentwidget = parent;
+
 	if (database) {
 		FetchPlaylists();
 	}
@@ -27,9 +29,20 @@ void Playlist_Paw_Manager::FetchPlaylists() {
     QList<Playlistdata> allPlaylists = database->FetchPlaylists();
 
     for (const Playlistdata& p : allPlaylists) {
-        QListWidgetItem* item = new QListWidgetItem(p.Name, ui->listWidget);
+        QListWidgetItem *item = new QListWidgetItem(p.Name, ui->listWidget);
 
         item->setData(Qt::UserRole, p.id);
+    }
+}
+
+void Playlist_Paw_Manager::LoadPlaylist() {
+    QListWidgetItem* item = ui->listWidget->currentItem();
+
+    if (item) {
+        int id = item->data(Qt::UserRole).toInt();
+
+		parentwidget->CurrentPlaylistId = id;
+
     }
 }
 

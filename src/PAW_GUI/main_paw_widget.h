@@ -48,6 +48,7 @@ public:
     QString returnTimeElapsed();
     QString returnTimeStamp();
     QString m_currentFile;
+    int CurrentPlaylistId;
 
     bool CanAutoSwitch = true;
 
