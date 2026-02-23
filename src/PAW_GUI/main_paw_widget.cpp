@@ -27,7 +27,7 @@ void Main_PAW_widget::SetupUIElements() {
 
     ui->TimelineSlider->setStyle(new JumpSliderStyle(ui->TimelineSlider->style()));
     ui->VolumeSlider->setStyle(new JumpSliderStyle(ui->VolumeSlider->style()));
-
+                    
     connect(ui->TimelineSlider, &QSlider::valueChanged, this, &Main_PAW_widget::onSliderValueChanged);
     connect(ui->VolumeSlider, &QSlider::valueChanged, this, &Main_PAW_widget::SetVolumeFromSlider);
     ui->VolumeSlider->setValue(100);
@@ -44,6 +44,7 @@ void Main_PAW_widget::SetupUIElements() {
     connect(ui->NextTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayNextItem);
     connect(ui->Playlist, &QListWidget::customContextMenuRequested, this, &Main_PAW_widget::showPlaylistContextMenu);
     connect(ui->Playlist, &QListWidget::itemDoubleClicked, this, &Main_PAW_widget::playSelectedItem);
+    connect(ui->PlaylistButton, &QPushButton::clicked, this, &Main_PAW_widget::launchPlaylistManager);
 
     connect(m_audiothread, &PortaudioThread::playbackProgress, this, &Main_PAW_widget::handlePlaybackProgress);
     connect(m_audiothread, &PortaudioThread::totalFileInfo, this, &Main_PAW_widget::handleTotalFileInfo);
@@ -72,9 +73,8 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
     about = new About_PAW_gui(this);
-    QTimer::singleShot(0, this, [this]() {
-        database = new DatabaseManager(this);
-        });
+    database = new DatabaseManager(this);
+    playlistmanager = new Playlist_Paw_Manager(database, this);
 
     if (!loader.load_jsonfile(settings, "settings.json")) {
         settings = nlohmann::json::object();
@@ -292,7 +292,8 @@ void Main_PAW_widget::LoadMetadatafromfile() {
         m_originalAlbumArt.loadFromData(trackInfo.coverImage, "JPG");
     }
 
- 
+    FileInfo_cleanup(&info);
+
     this->setWindowTitle(trackInfo.artist + " - " + trackInfo.title);
     ui->Filename->setText(trackInfo.title);
     ui->Artist->setText(trackInfo.artist);
@@ -420,6 +421,10 @@ void Main_PAW_widget::addCurrentPlayingfileToPlaylist() {
             ui->Playlist->setCurrentItem(newItem);
         }
     }
+}
+
+void Main_PAW_widget::launchPlaylistManager() {
+    playlistmanager->show();
 }
 
 void Main_PAW_widget::on_actionAddFolder_triggered() {

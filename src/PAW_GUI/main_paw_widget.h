@@ -18,6 +18,7 @@
 #include "settings_paw_gui.h"
 #include "about_paw_gui.h"
 #include "aboutfile_paw_gui.h"
+#include "playlist_paw_manager.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -27,6 +28,7 @@ QT_END_NAMESPACE
 
 class Settings_PAW_gui;
 class DatabaseManager;
+class Playlist_Paw_Manager;
 
 class Main_PAW_widget : public QMainWindow
 {
@@ -90,6 +92,7 @@ private:
     JsonLoader loader;
     QSystemTrayIcon *trayIcon;
     DatabaseManager *database;
+    Playlist_Paw_Manager *playlistmanager;
     float currentDuration;
     float totalDuration;
 
@@ -98,6 +101,7 @@ private:
     void SetupUIElements();
     void startPendingTrack();
     void SetupQtActions();
+    void launchPlaylistManager();
     void LoadMetadatafromfile();
     QString returnItemPath();
     void ProcessFilesList(const QString& file);

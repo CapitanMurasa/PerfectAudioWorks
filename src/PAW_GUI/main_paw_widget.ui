@@ -298,7 +298,7 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="PlaylistButton">
          <property name="text">
           <string>Playlist</string>
          </property>

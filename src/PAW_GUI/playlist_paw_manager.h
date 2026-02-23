@@ -14,8 +14,11 @@ class Playlist_Paw_Manager : public QDialog
 
 public:
     explicit Playlist_Paw_Manager(DatabaseManager *db, Main_PAW_widget* parent = nullptr);
+    ~Playlist_Paw_Manager();
 
 private:
     Ui::PlaylistManager* ui;
     DatabaseManager *database;
+
+    void Add_Playlist();
 };
