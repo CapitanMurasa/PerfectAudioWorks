@@ -175,60 +175,52 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
     FileInfo_cleanup(&file);
 }
 
-void DatabaseManager::InflatePlaylist(QString path, int playlistid) {
+void DatabaseManager::InflatePlaylist(QString path, int requestedId) {
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
-    if (!db.transaction()) {
-        qCritical() << "Failed to start database transaction:" << db.lastError().text();
-        return;
-    }
+    if (!db.transaction()) return;
 
     QSqlQuery query(db);
 
-    int TrackId = -1;
-    query.prepare("SELECT id from tracks WHERE path = :path");
+    int trackDbId = -1;
+    query.prepare("SELECT id FROM tracks WHERE path = :path");
     query.bindValue(":path", path);
     if (query.exec() && query.next()) {
-        TrackId = query.value(0).toInt();
+        trackDbId = query.value(0).toInt();
     }
 
-    if (TrackId == -1) {
-        qCritical() << "Cannot add track to playlist: Track not in database.";
+    if (trackDbId == -1) {
         db.rollback();
         return;
     }
 
+    int finalPlaylistId = -1;
 
-    int playlistId = -1;
+    query.prepare("SELECT id FROM playlists WHERE id = :id");
+    query.bindValue(":id", requestedId);
 
-    query.exec("SELECT id FROM playlists LIMIT 1");
-
-    if (query.next()) {
-        query.prepare("SELECT id FROM playlists WHERE id = :id");
-        query.bindValue(":id", playlistid);
-        if (query.exec() && query.next()) {
-            playlistId = query.value(0).toInt();
-        }
+    if (query.exec() && query.next()) {
+        finalPlaylistId = query.value(0).toInt();
     }
     else {
-        if (query.exec("INSERT INTO playlists (name) VALUES ('Default Playlist')")) {
-            playlistId = query.lastInsertId().toInt();
-            qDebug() << "Created default playlist with ID:" << playlistId;
+        if (query.exec("SELECT id FROM playlists LIMIT 1") && query.next()) {
+            finalPlaylistId = query.value(0).toInt();
+        }
+        else {
+            query.exec("INSERT INTO playlists (name) VALUES ('Default Playlist')");
+            finalPlaylistId = query.lastInsertId().toInt();
         }
     }
 
-    query.prepare("INSERT OR REPLACE INTO playlist_items (playlist_id, track_id) VALUES (:playlist_id, :track_id)");
-    query.bindValue(":playlist_id", playlistId);
-    query.bindValue(":track_id", TrackId);
+    query.prepare("INSERT OR REPLACE INTO playlist_items (playlist_id, track_id) "
+        "VALUES (:pid, :tid)");
+    query.bindValue(":pid", finalPlaylistId);
+    query.bindValue(":tid", trackDbId);
 
-    if (!query.exec()) {
-        qCritical() << "Failed to add to playlist_items:" << query.lastError().text();
+    if (query.exec() && db.commit()) {
+        qDebug() << "Track" << trackDbId << "added to Playlist" << finalPlaylistId;
     }
-
-    if (!db.commit()) {
+    else {
         db.rollback();
-    }
-    else {
-        qDebug() << "Track added to playlist successfully!";
     }
 }
 
