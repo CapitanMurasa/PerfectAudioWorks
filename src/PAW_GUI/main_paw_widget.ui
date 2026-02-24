@@ -293,7 +293,7 @@
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QListWidget" name="Playlist"/>
+      <widget class="QTableWidget" name="Playlist"/>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -318,6 +318,13 @@
         </spacer>
        </item>
        <item>
+        <widget class="QPushButton" name="pushButton">
+         <property name="text">
+          <string>Filters</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
           <string>Search:</string>
@@ -325,7 +332,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QKeySequenceEdit" name="keySequenceEdit"/>
+        <widget class="QLineEdit" name="lineEdit"/>
        </item>
       </layout>
      </item>

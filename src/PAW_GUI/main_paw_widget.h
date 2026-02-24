@@ -31,6 +31,7 @@ class Settings_PAW_gui;
 class DatabaseManager;
 class Playlist_Paw_Manager;
 class loadingplaylists;
+class QTableWidgetItem;
 
 class Main_PAW_widget : public QMainWindow
 {
@@ -88,7 +89,7 @@ private:
     QAction *m_deleteAction;
     PortaudioThread* m_audiothread; 
     FileInfo filemetadata;
-    QListWidgetItem* currentItemPlaying;
+    QTableWidgetItem* currentItemPlaying;
     QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
     Aboutfile_PAW_gui *aboutfile;
