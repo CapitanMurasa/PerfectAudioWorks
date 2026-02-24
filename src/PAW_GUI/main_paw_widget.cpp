@@ -260,6 +260,8 @@ void Main_PAW_widget::LoadMetadatafromfile() {
         file_info_current.genre = (metadata_result == 0 && info.genre && strlen(info.genre) > 0)
             ? QString::fromUtf8(info.genre) : "Unknown Genre";
 
+        file_info_current.bitrate = (info.bitrate != NULL) ? info.bitrate : 0;
+
         if (info.cover_image && info.cover_size > 0) {
             if (coverArt.loadFromData(info.cover_image, info.cover_size)) {
                 artFound = true;
@@ -276,6 +278,7 @@ void Main_PAW_widget::LoadMetadatafromfile() {
 
     this->setWindowTitle(file_info_current.artist + " - " + file_info_current.title);
     ui->Filename->setText(file_info_current.title);
+    ui->BitrateInfo->setText(QString::number(file_info_current.bitrate));
     ui->Artist->setText(file_info_current.artist);
     ui->AlbumArt->setPixmap(m_originalAlbumArt);
 
