@@ -27,8 +27,8 @@ void Main_PAW_widget::SetupUIElements() {
     setAcceptDrops(true);
     ui->Playlist->setAcceptDrops(true);
 
-    ui->Playlist->setColumnCount(2);
-    QStringList headers = { "Title", "Duration" };
+    ui->Playlist->setColumnCount(3);
+    QStringList headers = { "Title", "Artist", "Duration"};
     ui->Playlist->setHorizontalHeaderLabels(headers);
 
     ui->Playlist->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -502,17 +502,19 @@ void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {
     QList<TrackData> tracklist = database->LoadPlaylist(id);
 
     for (TrackData& trackInfo : tracklist) {
-        QString displayText = trackInfo.artist.isEmpty() ?
-            trackInfo.title : trackInfo.artist + " - " + trackInfo.title;
+        QString titleText = trackInfo.title.isEmpty() ? QFileInfo(trackInfo.path).fileName() : trackInfo.title;
+        QString artistText = trackInfo.artist.isEmpty() ? "Unknown Artist" : trackInfo.artist;
 
-        QTableWidgetItem* titleItem = new QTableWidgetItem(displayText);
-        titleItem->setData(Qt::UserRole, trackInfo.path);
+        QTableWidgetItem* titleItem = new QTableWidgetItem(titleText);
+        titleItem->setData(Qt::UserRole, trackInfo.path); 
+
+        QTableWidgetItem* artistItem = new QTableWidgetItem(artistText);
 
         int row = ui->Playlist->rowCount();
         ui->Playlist->insertRow(row);
-        ui->Playlist->setItem(row, 0, titleItem);
 
-       
+        ui->Playlist->setItem(row, 0, titleItem);  // Column 0 is Title
+        ui->Playlist->setItem(row, 1, artistItem); // Column 1 is Artist
     }
 
     ui->Playlist->setUpdatesEnabled(true);
@@ -536,15 +538,19 @@ void Main_PAW_widget::ProcessFilesList(const QString& file) {
         trackInfo = database->LoadRow(file);
     }
 
-    QString displayText = trackInfo.artist.isEmpty() ?
-        trackInfo.title : trackInfo.artist + " - " + trackInfo.title;
+    QString titleText = trackInfo.title.isEmpty() ? QFileInfo(file).fileName() : trackInfo.title;
+    QString artistText = trackInfo.artist.isEmpty() ? "Unknown Artist" : trackInfo.artist;
 
-    QTableWidgetItem* titleItem = new QTableWidgetItem(displayText);
+    QTableWidgetItem* titleItem = new QTableWidgetItem(titleText);
     titleItem->setData(Qt::UserRole, file);
+
+    QTableWidgetItem* artistItem = new QTableWidgetItem(artistText);
 
     int row = ui->Playlist->rowCount();
     ui->Playlist->insertRow(row);
-    ui->Playlist->setItem(row, 0, titleItem);
+
+    ui->Playlist->setItem(row, 0, titleItem); 
+    ui->Playlist->setItem(row, 1, artistItem);
 }
 
 void Main_PAW_widget::playSelectedItem() {
@@ -632,7 +638,7 @@ void Main_PAW_widget::showPlaylistContextMenu(const QPoint& pos) {
 
     connect(showDetailsAction, &QAction::triggered, this, [=]() {
         if (!aboutfile) {
-            aboutfile = new Aboutfile_PAW_gui(this);
+            aboutfile = new Aboutfile_PAW_gui(database, this);
         }
 
         if (clickedItem) {
@@ -661,7 +667,7 @@ void Main_PAW_widget::showPlaylistContextMenu(const QPoint& pos) {
 
 void Main_PAW_widget::showAboutTrackinfo() {
     if (!aboutfile) {
-        aboutfile = new Aboutfile_PAW_gui(this);
+        aboutfile = new Aboutfile_PAW_gui(database, this);
     }
 
     if (!m_currentFile.isEmpty()) {

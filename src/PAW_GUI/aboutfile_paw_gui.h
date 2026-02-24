@@ -2,36 +2,34 @@
 #define ABOUTFILE_PAW_GUI_H
 
 #include <QMainWindow>
+#include <QTableWidgetItem> 
 #include <QPixmap>
-#include <QListWidgetItem> 
-#include <QMessageBox>  
+#include "../miscellaneous/DatabaseManager.h" 
 
-QT_BEGIN_NAMESPACE
-namespace Ui { class Aboutfile_PAW_gui; }
-QT_END_NAMESPACE
+namespace Ui {
+    class Aboutfile_PAW_gui;
+}
 
 class Aboutfile_PAW_gui : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit Aboutfile_PAW_gui(QWidget* parent = nullptr);
-    ~Aboutfile_PAW_gui() override;
-
-
-    void setdata(QListWidgetItem* item);
+    explicit Aboutfile_PAW_gui(DatabaseManager* db, QWidget* parent = nullptr);
+    ~Aboutfile_PAW_gui();
 
     void setdata(const QString& filename);
+    void setdata(QTableWidgetItem* item); 
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
     Ui::Aboutfile_PAW_gui* ui;
-    QPixmap m_originalAlbumArt; 
-    int Samplerate;
-    int channels;
-    int bitrate;
+    QPixmap m_originalAlbumArt;
+    DatabaseManager* m_database;
+
     void updateAlbumArt();
 };
-#endif
+
+#endif 
