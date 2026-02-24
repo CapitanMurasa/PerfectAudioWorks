@@ -14,6 +14,7 @@ struct TrackData {
     QString genre;
     int bitrate;
     QByteArray coverImage;
+    QString format;
     bool found = false;
 };
 
