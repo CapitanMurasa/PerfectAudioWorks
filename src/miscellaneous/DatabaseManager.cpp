@@ -1,4 +1,5 @@
 #include "DatabaseManager.h"
+#include "../PAW_GUI/main_paw_widget.h"
 #include <QSqlDatabase>
 #include <QSqlQuery>   
 #include <QSqlError>

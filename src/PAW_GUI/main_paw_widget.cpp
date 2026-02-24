@@ -232,7 +232,6 @@ void Main_PAW_widget::startPendingTrack() {
 }
 
 void Main_PAW_widget::LoadMetadatafromfile() {
-    QString title, artist, album, genre;
     bool artFound = false;
     QPixmap coverArt;
     QString filename = m_currentFile;
@@ -247,41 +246,34 @@ void Main_PAW_widget::LoadMetadatafromfile() {
     metadata_result = get_metadata(utf8_filePath.constData(), &info);
 #endif
 
-    TrackData trackInfo = database->LoadRow(m_currentFile);
-    if (trackInfo.title.isEmpty()) {
-        title = (metadata_result == 0 && info.title && strlen(info.title) > 0)
+    file_info_current = database->LoadRow(m_currentFile);
+    if (file_info_current.title.isEmpty()) {
+        file_info_current.title = (metadata_result == 0 && info.title && strlen(info.title) > 0)
             ? QString::fromUtf8(info.title) : filename.section('/', -1);
 
-        artist = (metadata_result == 0 && info.artist && strlen(info.artist) > 0)
+        file_info_current.artist = (metadata_result == 0 && info.artist && strlen(info.artist) > 0)
             ? QString::fromUtf8(info.artist) : "Unknown Artist";
 
-        album = (metadata_result == 0 && info.album && strlen(info.album) > 0)
+        file_info_current.album = (metadata_result == 0 && info.album && strlen(info.album) > 0)
             ? QString::fromUtf8(info.album) : "Unknown Album";
 
-        genre = (metadata_result == 0 && info.genre && strlen(info.genre) > 0)
+        file_info_current.genre = (metadata_result == 0 && info.genre && strlen(info.genre) > 0)
             ? QString::fromUtf8(info.genre) : "Unknown Genre";
 
-        if (file_info_current.cover_image && file_info_current.cover_size > 0) {
-            if (coverArt.loadFromData(file_info_current.cover_image, file_info_current.cover_size)) {
+        if (info.cover_image && info.cover_size > 0) {
+            if (coverArt.loadFromData(info.cover_image, info.cover_size)) {
                 artFound = true;
             }
         }
 
         m_originalAlbumArt = artFound ? coverArt : QPixmap();
     }
-    else {
-        title = trackInfo.title;
-        artist = trackInfo.artist;
-        album = trackInfo.album;
-        genre = trackInfo.genre;
-        m_originalAlbumArt.loadFromData(trackInfo.coverImage, "JPG");
-    }
 
     FileInfo_cleanup(&info);
 
-    this->setWindowTitle(trackInfo.artist + " - " + trackInfo.title);
-    ui->Filename->setText(trackInfo.title);
-    ui->Artist->setText(trackInfo.artist);
+    this->setWindowTitle(file_info_current.artist + " - " + file_info_current.title);
+    ui->Filename->setText(file_info_current.title);
+    ui->Artist->setText(file_info_current.artist);
     ui->AlbumArt->setPixmap(m_originalAlbumArt);
 
     updateAlbumArt();

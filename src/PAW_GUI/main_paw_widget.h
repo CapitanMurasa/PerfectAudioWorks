@@ -47,7 +47,7 @@ public:
     void PlayPauseButton();
     void addFilesToPlaylistfromDatabase(int id);
 
-    FileInfo file_info_current;
+    TrackData file_info_current;
 
     QString returnTimeElapsed();
     QString returnTimeStamp();

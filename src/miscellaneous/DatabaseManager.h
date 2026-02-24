@@ -1,6 +1,5 @@
 #pragma once
 #include <QSqlDatabase>
-#include "../PAW_GUI/main_paw_widget.h"
 #include "file.h"
 
 class Main_PAW_widget;
