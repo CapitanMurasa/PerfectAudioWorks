@@ -75,6 +75,7 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     about = new About_PAW_gui(this);
     database = new DatabaseManager(this);
     playlistmanager = new Playlist_Paw_Manager(database, this);
+    loadtoplaylistbar = new loadingplaylists(this);
 
     if (!loader.load_jsonfile(settings, "settings.json")) {
         settings = nlohmann::json::object();
@@ -158,20 +159,16 @@ void Main_PAW_widget::dropEvent(QDropEvent* event) {
 }
 
 void Main_PAW_widget::addFolderToPlaylist(const QString& folderPath) {
-    QStringList filters;
+    QStringList filters, filesFromFolder;
     filters << "*.mp3" << "*.wav" << "*.flac" << "*.ogg" << "*.opus" << "*.m4a" << "*.aac";
 
     QDirIterator it(folderPath, filters, QDir::Files, QDirIterator::Subdirectories);
 
     while (it.hasNext()) {
-        QString filePath = it.next();
-
-        ProcessFilesList(filePath);
-
-        if (saveplaylist) {
-            database->InflatePlaylist(filePath, CurrentPlaylistId);
-        }
+        filesFromFolder.append(it.next());
     }
+
+    ProcessFilesToPlaylist(filesFromFolder);
 }
 
 
@@ -444,13 +441,25 @@ void Main_PAW_widget::ClearUi() {
     ui->AlbumArt->hide();
 }
 
-void Main_PAW_widget::addFilesToPlaylist() {
-    FileInfo info;
-    QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus *.m4a *.aac);;All Files (*)");
 
-    for (const QString& file : files) {
+void Main_PAW_widget::addFilesToPlaylist() {
+    QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus *.m4a *.aac);;All Files (*)");
+    ProcessFilesToPlaylist(files);
+}
+
+void Main_PAW_widget::ProcessFilesToPlaylist(QStringList files) {
+    int numElements = files.size();
+
+    for (int i = 0; i < numElements; i++) {
+        QString file = files.at(i);
+        int progressbari = (i * 100) / numElements;
+
         if (!database->TrackExists(file)) {
+            QString labelinfo = QString("adding %1 to the playlist... %2/%3")
+                .arg(file).arg(i + 1).arg(numElements);
+
             FileInfo info = { 0 };
+
 #ifdef _WIN32
             std::wstring w_filePath = file.toStdWString();
             get_metadata_w(w_filePath.c_str(), &info);
@@ -458,14 +467,25 @@ void Main_PAW_widget::addFilesToPlaylist() {
             QByteArray utf8_filePath = file.toUtf8();
             get_metadata(utf8_filePath.constData(), &info);
 #endif
+
+            loadtoplaylistbar->show();
+            loadtoplaylistbar->raise();
+            loadtoplaylistbar->activateWindow();
+
             database->FillRow(info, file);
             if (saveplaylist) {
                 database->InflatePlaylist(file, CurrentPlaylistId);
             }
 
+            loadtoplaylistbar->inflateloadingbar(progressbari, labelinfo);
+
+            QCoreApplication::processEvents();
+
             ProcessFilesList(file);
         }
     }
+
+    loadtoplaylistbar->hide();
 }
 
 void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {

@@ -1,18 +1,21 @@
-#include "ui_loadingplaylists.h"
 #include "loadingplaylists.h"
+#include "main_paw_widget.h"
+#include "ui_loadingplaylists.h" 
 
-void loadingplaylists(Main_PAW_widget parent) :
-	parentwidget(parent)
-	, ui(new Ui::About_PAW_gui) 
+
+loadingplaylists::loadingplaylists(Main_PAW_widget* parent)
+    : QDialog(parent),
+    ui(new Ui::loadingplaylists),
+    parentwidget(parent)
 {
-	ui->Show(this);
-}
-void ~loadingplaylists() {
-	delete ui;
+    ui->setupUi(this);
 }
 
-void inflateloadingbar(int value, QString label) {
+loadingplaylists::~loadingplaylists() {
+    delete ui;
+}
 
-	ui->progressbar->setValue(value);
-	ui->label->setText(label);
+void loadingplaylists::inflateloadingbar(int value, QString label) {
+    ui->progressbar->setValue(value);
+    ui->DebugInfo->setText(label);
 }

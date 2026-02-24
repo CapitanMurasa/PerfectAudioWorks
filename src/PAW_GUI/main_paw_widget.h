@@ -19,6 +19,7 @@
 #include "about_paw_gui.h"
 #include "aboutfile_paw_gui.h"
 #include "playlist_paw_manager.h"
+#include "loadingplaylists.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -29,6 +30,7 @@ QT_END_NAMESPACE
 class Settings_PAW_gui;
 class DatabaseManager;
 class Playlist_Paw_Manager;
+class loadingplaylists;
 
 class Main_PAW_widget : public QMainWindow
 {
@@ -95,6 +97,7 @@ private:
     QSystemTrayIcon *trayIcon;
     DatabaseManager *database;
     Playlist_Paw_Manager *playlistmanager;
+    loadingplaylists *loadtoplaylistbar;
     float currentDuration;
     float totalDuration;
 
@@ -103,6 +106,7 @@ private:
     void SetupUIElements();
     void startPendingTrack();
     void SetupQtActions();
+    void ProcessFilesToPlaylist(QStringList files);
     void launchPlaylistManager();
     void LoadMetadatafromfile();
     QString returnItemPath();
