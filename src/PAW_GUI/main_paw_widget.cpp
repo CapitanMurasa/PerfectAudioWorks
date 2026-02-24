@@ -268,6 +268,9 @@ void Main_PAW_widget::LoadMetadatafromfile() {
 
         m_originalAlbumArt = artFound ? coverArt : QPixmap();
     }
+    else {
+        m_originalAlbumArt.loadFromData(file_info_current.coverImage, "JPEG");
+    }
 
     FileInfo_cleanup(&info);
 
