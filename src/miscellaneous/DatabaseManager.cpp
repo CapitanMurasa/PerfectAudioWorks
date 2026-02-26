@@ -250,12 +250,12 @@ QList<TrackData> DatabaseManager::LoadPlaylist(int playlistid) {
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
     QSqlQuery query(db);
 
-    query.prepare("SELECT t.id, t.path, t.title, a.name "
+    query.prepare("SELECT t.id, t.path, t.title, a.name, t.duration_s "
         "FROM tracks t "
         "INNER JOIN playlist_items pi ON t.id = pi.track_id "
         "LEFT JOIN artists a ON t.artist_id = a.id "
         "WHERE pi.playlist_id = :pid "
-        "ORDER BY pi.track_id ASC"); 
+        "ORDER BY pi.track_id ASC");
 
     query.bindValue(":pid", playlistid);
 
@@ -265,7 +265,9 @@ QList<TrackData> DatabaseManager::LoadPlaylist(int playlistid) {
             data.id = query.value(0).toInt();
             data.path = query.value(1).toString();
             data.title = query.value(2).toString();
-            data.artist = query.value(3).toString(); 
+            data.artist = query.value(3).toString();
+
+            data.duration = query.value(4).toInt();
 
             tracklist.append(data);
         }

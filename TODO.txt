@@ -1,8 +1,9 @@
 TODO PAW:
 Bugfixes:
 fix the bug when on unplugging audiodevice that is currenty playing would skip the current track and switch to the next track
-Potential memory leak when changing songs
+
 
 Features:
-Allow plugins to utilize error/warning message boxes
-Disable/Enable plugins.
+
+Dark theme
+Indexation
