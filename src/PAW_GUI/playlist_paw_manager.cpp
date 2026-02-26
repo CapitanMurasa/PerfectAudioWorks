@@ -17,6 +17,7 @@ Playlist_Paw_Manager::Playlist_Paw_Manager(DatabaseManager* db, Main_PAW_widget*
 	}
 
 	connect(ui->AddPlaylist, &QPushButton::clicked, this, &Playlist_Paw_Manager::Add_Playlist);
+	connect(ui->LoadPlaylist, &QPushButton::clicked, this, &Playlist_Paw_Manager::LoadPlaylist);
 }
 
 Playlist_Paw_Manager::~Playlist_Paw_Manager() {
