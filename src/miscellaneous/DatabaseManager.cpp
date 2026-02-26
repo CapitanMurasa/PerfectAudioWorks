@@ -181,23 +181,6 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
 
     query.prepare("INSERT OR IGNORE INTO albums (title, cover_image) VALUES (:title, :cover)");
     query.bindValue(":title", targetAlbumTitle);
-
-
-    if (coverBlob.isEmpty()) {
-        query.bindValue(":cover", QVariant(QMetaType::fromType<QByteArray>()));
-    }
-    else {
-        query.bindValue(":cover", coverBlob);
-    }
-    query.exec();
-
-    query.prepare("SELECT id FROM albums WHERE title = :title");
-    query.bindValue(":title", targetAlbumTitle);
-    query.exec();
-    int albumId = -1;
-    if (query.next()) albumId = query.value(0).toInt();
-    qDebug() << albumId;
-
     
     query.prepare("INSERT OR REPLACE INTO tracks (path, title, bitrate, genre_id, artist_id, album_id, format_id, duration_s) "
         "VALUES (:path, :title, :bitrate, :genre_id, :artist_id, :album_id, :format_id, :duration_s)");
