@@ -12,6 +12,7 @@ struct TrackData {
     QString album;
     QString genre;
     int bitrate;
+    int duration;
     QByteArray coverImage;
     QString format;
     bool found = false;

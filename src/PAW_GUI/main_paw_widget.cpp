@@ -510,11 +510,21 @@ void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {
 
         QTableWidgetItem* artistItem = new QTableWidgetItem(artistText);
 
+        int minutes = trackInfo.duration / 60;
+        int seconds = trackInfo.duration % 60;
+
+        QString formattedDuration = QString("%1:%2")
+            .arg(minutes, 2, 10, QChar('0'))
+            .arg(seconds, 2, 10, QChar('0'));
+
+        QTableWidgetItem* durationItem = new QTableWidgetItem(formattedDuration);
+
         int row = ui->Playlist->rowCount();
         ui->Playlist->insertRow(row);
 
-        ui->Playlist->setItem(row, 0, titleItem);  // Column 0 is Title
-        ui->Playlist->setItem(row, 1, artistItem); // Column 1 is Artist
+        ui->Playlist->setItem(row, 0, titleItem);  
+        ui->Playlist->setItem(row, 1, artistItem);
+        ui->Playlist->setItem(row, 2, durationItem);
     }
 
     ui->Playlist->setUpdatesEnabled(true);
@@ -541,16 +551,27 @@ void Main_PAW_widget::ProcessFilesList(const QString& file) {
     QString titleText = trackInfo.title.isEmpty() ? QFileInfo(file).fileName() : trackInfo.title;
     QString artistText = trackInfo.artist.isEmpty() ? "Unknown Artist" : trackInfo.artist;
 
+
     QTableWidgetItem* titleItem = new QTableWidgetItem(titleText);
     titleItem->setData(Qt::UserRole, file);
 
     QTableWidgetItem* artistItem = new QTableWidgetItem(artistText);
+
+    int minutes = trackInfo.duration / 60;
+    int seconds = trackInfo.duration % 60;
+
+    QString formattedDuration = QString("%1:%2")
+        .arg(minutes, 2, 10, QChar('0'))
+        .arg(seconds, 2, 10, QChar('0'));
+
+    QTableWidgetItem* durationItem = new QTableWidgetItem(formattedDuration);
 
     int row = ui->Playlist->rowCount();
     ui->Playlist->insertRow(row);
 
     ui->Playlist->setItem(row, 0, titleItem); 
     ui->Playlist->setItem(row, 1, artistItem);
+    ui->Playlist->setItem(row, 2, durationItem);
 }
 
 void Main_PAW_widget::playSelectedItem() {

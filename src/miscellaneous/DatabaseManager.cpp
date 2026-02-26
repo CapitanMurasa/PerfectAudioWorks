@@ -79,6 +79,7 @@ void DatabaseManager::createUnifiedSchema() {
         "genre_id INTEGER, "
         "album_id INTEGER, "
         "format_id INTEGER, "
+        "duration_s INTEGER, "
         "FOREIGN KEY(artist_id) REFERENCES artists(id), "
         "FOREIGN KEY(genre_id) REFERENCES genres(id), "
         "FOREIGN KEY(album_id) REFERENCES albums(id),"
@@ -169,8 +170,8 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
     qDebug() << albumId;
 
     
-    query.prepare("INSERT OR REPLACE INTO tracks (path, title, bitrate, genre_id, artist_id, album_id, format_id) "
-        "VALUES (:path, :title, :bitrate, :genre_id, :artist_id, :album_id, :format_id)");
+    query.prepare("INSERT OR REPLACE INTO tracks (path, title, bitrate, genre_id, artist_id, album_id, format_id, duration_s) "
+        "VALUES (:path, :title, :bitrate, :genre_id, :artist_id, :album_id, :format_id, :duration_s)");
     query.bindValue(":path", path);
     query.bindValue(":title", QString::fromStdString(file.title));
     query.bindValue(":genre_id", genreId);
@@ -178,6 +179,7 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
     query.bindValue(":artist_id", artistId);
     query.bindValue(":album_id", albumId);
     query.bindValue(":format_id", formatId);
+    query.bindValue(":duration_s", file.durationSeconds);
 
     if (!query.exec()) {
         qCritical() << "Failed to insert track:" << query.lastError().text();
@@ -372,6 +374,7 @@ TrackData DatabaseManager::LoadRow(QString path) {
         data.path = query.value(1).toString();
         data.title = query.value(2).toString();
         data.bitrate = query.value(3).toInt();
+        data.duration = query.value(8).toInt();
         int artistId = query.value(4).toInt();
         int genreId = query.value(5).toInt();
         int albumId = query.value(6).toInt();
