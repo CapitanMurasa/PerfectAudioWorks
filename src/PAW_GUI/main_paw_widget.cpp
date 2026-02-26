@@ -271,7 +271,7 @@ void Main_PAW_widget::LoadMetadatafromfile() {
         m_originalAlbumArt = artFound ? coverArt : QPixmap();
     }
     else {
-        m_originalAlbumArt.loadFromData(file_info_current.coverImage, "JPEG");
+        m_originalAlbumArt.loadFromData(file_info_current.coverImage);
     }
 
     FileInfo_cleanup(&info);
@@ -454,6 +454,8 @@ void Main_PAW_widget::addFilesToPlaylist() {
 
 void Main_PAW_widget::ProcessFilesToPlaylist(QStringList files) {
     int numElements = files.size();
+    loadtoplaylistbar->show();
+    loadtoplaylistbar->raise();
 
     for (int i = 0; i < numElements; i++) {
         QString file = files.at(i);
@@ -473,9 +475,6 @@ void Main_PAW_widget::ProcessFilesToPlaylist(QStringList files) {
             get_metadata(utf8_filePath.constData(), &info);
 #endif
 
-            loadtoplaylistbar->show();
-            loadtoplaylistbar->raise();
-            loadtoplaylistbar->activateWindow();
 
             database->FillRow(info, file);
             if (saveplaylist) {
@@ -496,8 +495,12 @@ void Main_PAW_widget::ProcessFilesToPlaylist(QStringList files) {
 void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {
     CurrentPlaylistId = id;
 
+    currentItemPlaying = nullptr;
+
+    ui->Playlist->blockSignals(true);
+
     ui->Playlist->setUpdatesEnabled(false);
-    ui->Playlist->setRowCount(0); 
+    ui->Playlist->setRowCount(0);
 
     QList<TrackData> tracklist = database->LoadPlaylist(id);
 
@@ -506,7 +509,7 @@ void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {
         QString artistText = trackInfo.artist.isEmpty() ? "Unknown Artist" : trackInfo.artist;
 
         QTableWidgetItem* titleItem = new QTableWidgetItem(titleText);
-        titleItem->setData(Qt::UserRole, trackInfo.path); 
+        titleItem->setData(Qt::UserRole, trackInfo.path);
 
         QTableWidgetItem* artistItem = new QTableWidgetItem(artistText);
 
@@ -522,12 +525,14 @@ void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {
         int row = ui->Playlist->rowCount();
         ui->Playlist->insertRow(row);
 
-        ui->Playlist->setItem(row, 0, titleItem);  
+        ui->Playlist->setItem(row, 0, titleItem);
         ui->Playlist->setItem(row, 1, artistItem);
         ui->Playlist->setItem(row, 2, durationItem);
     }
 
     ui->Playlist->setUpdatesEnabled(true);
+
+    ui->Playlist->blockSignals(false);
 }
 
 void Main_PAW_widget::ProcessFilesList(const QString& file) {

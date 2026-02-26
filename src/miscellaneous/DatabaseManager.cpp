@@ -106,12 +106,24 @@ void DatabaseManager::createUnifiedSchema() {
 }
 
 void DatabaseManager::FillRow(FileInfo file, QString path) {
-    QString targetAlbumTitle = QString::fromStdString(file.album == "" ? file.title : file.album);
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
+    QString targetAlbumTitle = QString::fromStdString(file.album == "" ? file.title : file.album);
     if (!db.transaction()) {
         qCritical() << "Failed to start database transaction:" << db.lastError().text();
         return;
     }
+
+    QString targetAlbum = QString::fromStdString(file.album).trimmed();
+    QString targetTitle = QString::fromStdString(file.title).trimmed();
+    QString targetArtist = QString::fromStdString(file.artist).trimmed();
+    QString targetGenre = QString::fromStdString(file.genre).trimmed();
+
+    if (targetAlbum.isEmpty()) {
+        targetAlbum = targetTitle.isEmpty() ? "Unknown Album" : targetTitle;
+    }
+    if (targetArtist.isEmpty()) targetArtist = "Unknown Artist";
+    if (targetGenre.isEmpty()) targetGenre = "Unknown Genre";
+
 
     QByteArray coverBlob;
     if (file.cover_image && file.cover_size > 0) {
@@ -131,24 +143,41 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
     if (query.next()) formatId = query.value(0).toInt();
 
     query.prepare("INSERT OR IGNORE INTO genres (name) VALUES (:name)");
-    query.bindValue(":name", QString::fromStdString(file.genre));
+    query.bindValue(":name", targetGenre); 
     query.exec();
 
     query.prepare("SELECT id FROM genres WHERE name = :name");
-    query.bindValue(":name", QString::fromStdString(file.genre));
+    query.bindValue(":name", targetGenre);
     query.exec();
     int genreId = -1;
     if (query.next()) genreId = query.value(0).toInt();
 
     query.prepare("INSERT OR IGNORE INTO artists (name) VALUES (:name)");
-    query.bindValue(":name", QString::fromStdString(file.artist));
+    query.bindValue(":name", targetArtist);
     query.exec();
 
     query.prepare("SELECT id FROM artists WHERE name = :name");
-    query.bindValue(":name", QString::fromStdString(file.artist));
+    query.bindValue(":name", targetArtist);
     query.exec();
     int artistId = -1;
     if (query.next()) artistId = query.value(0).toInt();
+
+    query.prepare("INSERT OR IGNORE INTO albums (title, cover_image) VALUES (:title, :cover)");
+    query.bindValue(":title", targetAlbum);
+
+    if (coverBlob.isEmpty()) {
+        query.bindValue(":cover", QVariant(QMetaType::fromType<QByteArray>()));
+    }
+    else {
+        query.bindValue(":cover", coverBlob);
+    }
+    query.exec();
+
+    query.prepare("SELECT id FROM albums WHERE title = :title");
+    query.bindValue(":title", targetAlbum);
+    query.exec();
+    int albumId = -1;
+    if (query.next()) albumId = query.value(0).toInt();
 
     query.prepare("INSERT OR IGNORE INTO albums (title, cover_image) VALUES (:title, :cover)");
     query.bindValue(":title", targetAlbumTitle);
