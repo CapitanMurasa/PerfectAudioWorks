@@ -453,9 +453,12 @@ void Main_PAW_widget::addFilesToPlaylist() {
     ProcessFilesToPlaylist(files);
 }
 
-void Main_PAW_widget::IndexationEvent(QString& indextext) {
-    ui->Playlist->clear();
+void Main_PAW_widget::IndexationEvent(const QString& indextext) {
+    ui->Playlist->setRowCount(0);
+    currentItemPlaying = nullptr;
     QList<TrackData> indexres = database->IndexResult(indextext, CurrentPlaylistId);
+
+    ui->Playlist->setUpdatesEnabled(false);
 
     for (TrackData& trackInfo : indexres) {
         QString titleText = trackInfo.title.isEmpty() ? QFileInfo(trackInfo.path).fileName() : trackInfo.title;
@@ -482,6 +485,8 @@ void Main_PAW_widget::IndexationEvent(QString& indextext) {
         ui->Playlist->setItem(row, 1, artistItem);
         ui->Playlist->setItem(row, 2, durationItem);
     }
+
+    ui->Playlist->setUpdatesEnabled(true);
 }
 
 void Main_PAW_widget::ProcessFilesToPlaylist(QStringList files) {
