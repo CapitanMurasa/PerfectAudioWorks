@@ -318,13 +318,6 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton">
-         <property name="text">
-          <string>Filters</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
           <string>Search:</string>

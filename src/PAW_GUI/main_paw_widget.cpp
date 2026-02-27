@@ -58,6 +58,7 @@ void Main_PAW_widget::SetupUIElements() {
     connect(ui->Playlist, &QTableWidget::itemDoubleClicked, this, &Main_PAW_widget::playSelectedItem);
 
     connect(ui->PlaylistButton, &QPushButton::clicked, this, &Main_PAW_widget::launchPlaylistManager);
+    connect(ui->lineEdit, &QLineEdit::textEdited, this, &Main_PAW_widget::IndexationEvent);
 
     connect(m_audiothread, &PortaudioThread::playbackProgress, this, &Main_PAW_widget::handlePlaybackProgress);
     connect(m_audiothread, &PortaudioThread::totalFileInfo, this, &Main_PAW_widget::handleTotalFileInfo);
@@ -450,6 +451,37 @@ void Main_PAW_widget::ClearUi() {
 void Main_PAW_widget::addFilesToPlaylist() {
     QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus *.m4a *.aac);;All Files (*)");
     ProcessFilesToPlaylist(files);
+}
+
+void Main_PAW_widget::IndexationEvent(QString& indextext) {
+    ui->Playlist->clear();
+    QList<TrackData> indexres = database->IndexResult(indextext, CurrentPlaylistId);
+
+    for (TrackData& trackInfo : indexres) {
+        QString titleText = trackInfo.title.isEmpty() ? QFileInfo(trackInfo.path).fileName() : trackInfo.title;
+        QString artistText = trackInfo.artist.isEmpty() ? "Unknown Artist" : trackInfo.artist;
+
+        QTableWidgetItem* titleItem = new QTableWidgetItem(titleText);
+        titleItem->setData(Qt::UserRole, trackInfo.path);
+
+        QTableWidgetItem* artistItem = new QTableWidgetItem(artistText);
+
+        int minutes = trackInfo.duration / 60;
+        int seconds = trackInfo.duration % 60;
+
+        QString formattedDuration = QString("%1:%2")
+            .arg(minutes, 2, 10, QChar('0'))
+            .arg(seconds, 2, 10, QChar('0'));
+
+        QTableWidgetItem* durationItem = new QTableWidgetItem(formattedDuration);
+
+        int row = ui->Playlist->rowCount();
+        ui->Playlist->insertRow(row);
+
+        ui->Playlist->setItem(row, 0, titleItem);
+        ui->Playlist->setItem(row, 1, artistItem);
+        ui->Playlist->setItem(row, 2, durationItem);
+    }
 }
 
 void Main_PAW_widget::ProcessFilesToPlaylist(QStringList files) {

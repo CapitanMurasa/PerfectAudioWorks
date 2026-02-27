@@ -82,6 +82,7 @@ private slots:
     void openSettings();
     void on_actionAddFolder_triggered();
     void openAbout();
+    void IndexationEvent(QString& indextext);
 
 private:
 

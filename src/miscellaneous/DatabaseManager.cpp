@@ -105,6 +105,39 @@ void DatabaseManager::createUnifiedSchema() {
     }
 }
 
+QList<TrackData> DatabaseManager::IndexResult(QString request, int playlist_id) {
+    QList<TrackData> tracklist;
+    QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
+    QSqlQuery query(db);
+
+
+    query.prepare("SELECT t.id, t.path, t.title, a.name, t.duration_s "
+        "FROM tracks t "
+        "LEFT JOIN artists a ON t.artist_id = a.id "
+        "WHERE t.title LIKE :value "
+        "AND t.id IN (SELECT track_id FROM playlist_items WHERE playlist_id = :pid)");
+    query.bindValue(":value", "%" + request + "%");
+    query.bindValue(":pid", playlist_id);
+
+
+    if (query.exec()) {
+        while (query.next()) {
+            TrackData data;
+            data.id = query.value(0).toInt();
+            data.path = query.value(1).toString();
+            data.title = query.value(2).toString();
+            data.artist = query.value(3).toString();
+            data.duration = query.value(4).toInt();
+            tracklist.append(data);
+        }
+    }
+    else {
+        qCritical() << "Search Query Failed:" << query.lastError().text();
+    }
+
+    return tracklist;
+}
+
 void DatabaseManager::FillRow(FileInfo file, QString path) {
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
     QString targetAlbumTitle = QString::fromStdString(file.album == "" ? file.title : file.album);

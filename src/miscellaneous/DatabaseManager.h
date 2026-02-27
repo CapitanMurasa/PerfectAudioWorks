@@ -34,6 +34,7 @@ public:
     TrackData LoadRow(QString path);
     void AddPlaylist(QString playlistname);
     QString FetchPlaylist(int id);
+    QList<TrackData> IndexResult(QString request, int playlist_id);
     QList<Playlistdata> FetchPlaylists();
     void InflatePlaylist(QString path, int playlistid);
     void RemoveFromPlaylist(QString path, int playlistId);
