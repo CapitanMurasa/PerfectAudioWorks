@@ -49,6 +49,7 @@ void Main_PAW_widget::SetupUIElements() {
     connect(ui->actionadd_files_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addFilesToPlaylist);
     connect(ui->actionadd_folders_to_playlist, &QAction::triggered, this, &Main_PAW_widget::on_actionAddFolder_triggered);
     connect(ui->actionadd_current_file_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addCurrentPlayingfileToPlaylist);
+    connect(ui->actionRefresh_playlist_chache, &QAction::triggered, this, &Main_PAW_widget::refreshDatabaseCache);
     connect(ui->actionShow_Details, &QAction::triggered, this, &Main_PAW_widget::showAboutTrackinfo);
     connect(ui->Stop, &QPushButton::clicked, this, &Main_PAW_widget::StopPlayback);
     connect(ui->PreviousTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayPreviousItem);
@@ -284,6 +285,59 @@ void Main_PAW_widget::LoadMetadatafromfile() {
     ui->AlbumArt->setPixmap(m_originalAlbumArt);
 
     updateAlbumArt();
+}
+
+void Main_PAW_widget::refreshDatabaseCache() {
+    int numElements = ui->Playlist->rowCount();
+
+    if (numElements == 0) {
+        return;
+    }
+
+    loadtoplaylistbar->show();
+    loadtoplaylistbar->raise();
+
+    for (int row = 0; row < numElements; ++row) {
+        QString file = "";
+        QTableWidgetItem* item = ui->Playlist->item(row, 0);
+
+        if (item) {
+            file = item->text();
+        }
+
+        if (file.isEmpty()) {
+            continue;
+        }
+
+        int progressbari = ((row + 1) * 100) / numElements;
+
+        if (!database->TrackExists(file)) {
+            QString labelinfo = QString("adding %1 to the playlist... %2/%3")
+                .arg(file).arg(row + 1).arg(numElements);
+
+            FileInfo info = { 0 };
+
+#ifdef _WIN32
+            std::wstring w_filePath = file.toStdWString();
+            get_metadata_w(w_filePath.c_str(), &info);
+#else
+            QByteArray utf8_filePath = file.toUtf8();
+            get_metadata(utf8_filePath.constData(), &info);
+#endif
+
+            database->FillRow(info, file);
+            if (saveplaylist) {
+                database->InflatePlaylist(file, CurrentPlaylistId);
+            }
+
+            loadtoplaylistbar->inflateloadingbar(progressbari, labelinfo);
+
+            QCoreApplication::processEvents();
+            ProcessFilesList(file);
+        }
+    }
+
+    loadtoplaylistbar->hide();
 }
 
 void Main_PAW_widget::updateAlbumArt()

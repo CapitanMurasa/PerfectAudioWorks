@@ -1,9 +1,16 @@
 TODO PAW:
 Bugfixes:
 fix the bug when on unplugging audiodevice that is currenty playing would skip the current track and switch to the next track
-
+resize album arts to certiain formats to keep program optimized
 
 Features:
-
 Dark theme
-Indexation
+visualization of sound
+ui skins
+m3u support
+
+enchance plugin system:
+allow user to make own widget for plugin
+able to read chunks of frames from audioengine
+able to write raw chunks of frames to ffmpeg decoder
+more control of player

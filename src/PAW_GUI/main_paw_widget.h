@@ -83,6 +83,7 @@ private slots:
     void on_actionAddFolder_triggered();
     void openAbout();
     void IndexationEvent(const QString& indextext);
+    void refreshDatabaseCache();
 
 private:
 

@@ -359,6 +359,7 @@
     </property>
     <addaction name="separator"/>
     <addaction name="actionSettings"/>
+    <addaction name="actionRefresh_playlist_chache"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -403,6 +404,11 @@
   <action name="actionShow_Details">
    <property name="text">
     <string>Show Details...</string>
+   </property>
+  </action>
+  <action name="actionRefresh_playlist_chache">
+   <property name="text">
+    <string>Refresh playlist chache</string>
    </property>
   </action>
  </widget>
