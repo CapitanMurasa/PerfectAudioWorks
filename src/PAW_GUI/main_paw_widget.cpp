@@ -301,8 +301,8 @@ void Main_PAW_widget::refreshDatabaseCache() {
         QString file = "";
         QTableWidgetItem* item = ui->Playlist->item(row, 0);
 
-        if (item) {
-            file = item->text();
+        if (item){
+            file = item->data(Qt::UserRole).toString();
         }
 
         if (file.isEmpty()) {
@@ -311,33 +311,28 @@ void Main_PAW_widget::refreshDatabaseCache() {
 
         int progressbari = ((row + 1) * 100) / numElements;
 
-        if (!database->TrackExists(file)) {
-            QString labelinfo = QString("adding %1 to the playlist... %2/%3")
-                .arg(file).arg(row + 1).arg(numElements);
+        QString labelinfo = QString("refreshing %1 in the playlist... %2/%3")
+             .arg(file).arg(row + 1).arg(numElements);
 
-            FileInfo info = { 0 };
+        FileInfo info = { 0 };
 
 #ifdef _WIN32
-            std::wstring w_filePath = file.toStdWString();
-            get_metadata_w(w_filePath.c_str(), &info);
+        std::wstring w_filePath = file.toStdWString();
+        get_metadata_w(w_filePath.c_str(), &info);
 #else
-            QByteArray utf8_filePath = file.toUtf8();
-            get_metadata(utf8_filePath.constData(), &info);
+        QByteArray utf8_filePath = file.toUtf8();
+        get_metadata(utf8_filePath.constData(), &info);
 #endif
 
-            database->FillRow(info, file);
-            if (saveplaylist) {
-                database->InflatePlaylist(file, CurrentPlaylistId);
-            }
+        database->FillRow(info, file);
 
-            loadtoplaylistbar->inflateloadingbar(progressbari, labelinfo);
+        loadtoplaylistbar->inflateloadingbar(progressbari, labelinfo);
 
-            QCoreApplication::processEvents();
-            ProcessFilesList(file);
+        QCoreApplication::processEvents();
         }
-    }
 
     loadtoplaylistbar->hide();
+    addFilesToPlaylistfromDatabase(CurrentPlaylistId);
 }
 
 void Main_PAW_widget::updateAlbumArt()

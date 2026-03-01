@@ -215,16 +215,29 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
     query.prepare("INSERT OR IGNORE INTO albums (title, cover_image) VALUES (:title, :cover)");
     query.bindValue(":title", targetAlbumTitle);
     
-    query.prepare("INSERT OR REPLACE INTO tracks (path, title, bitrate, genre_id, artist_id, album_id, format_id, duration_s) "
-        "VALUES (:path, :title, :bitrate, :genre_id, :artist_id, :album_id, :format_id, :duration_s)");
+    query.prepare("INSERT INTO tracks (path, title, bitrate, genre_id, artist_id, album_id, format_id, duration_s) "
+        "VALUES (:path, :title, :bitrate, :genre_id, :artist_id, :album_id, :format_id, :duration_s) "
+        "ON CONFLICT(path) DO UPDATE SET "
+        "title=excluded.title, "
+        "bitrate=excluded.bitrate, "
+        "genre_id=excluded.genre_id, "
+        "artist_id=excluded.artist_id, "
+        "album_id=excluded.album_id, "
+        "format_id=excluded.format_id, "
+        "duration_s=excluded.duration_s");
+
     query.bindValue(":path", path);
     query.bindValue(":title", QString::fromStdString(file.title));
     query.bindValue(":genre_id", genreId);
-    query.bindValue(":bitrate",  file.bitrate);
+    query.bindValue(":bitrate", file.bitrate);
     query.bindValue(":artist_id", artistId);
     query.bindValue(":album_id", albumId);
     query.bindValue(":format_id", formatId);
     query.bindValue(":duration_s", file.durationSeconds);
+
+    if (!query.exec()) {
+        qCritical() << "Failed to insert/update track:" << query.lastError().text();
+    }
 
     if (!query.exec()) {
         qCritical() << "Failed to insert track:" << query.lastError().text();
