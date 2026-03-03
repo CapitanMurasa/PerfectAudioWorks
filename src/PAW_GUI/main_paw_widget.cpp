@@ -441,6 +441,7 @@ void Main_PAW_widget::addCurrentPlayingfileToPlaylist() {
 }
 
 void Main_PAW_widget::launchPlaylistManager() {
+    playlistmanager->FetchPlaylists();
     playlistmanager->show();
 }
 
