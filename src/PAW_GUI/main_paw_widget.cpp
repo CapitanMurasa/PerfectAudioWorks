@@ -15,6 +15,8 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QMimeData>
+#include <QTableWidgetItem> 
+
 #if _WIN32
 #include "GlobalKeys.h"
 #include <windows.h>
@@ -22,8 +24,17 @@
 
 void Main_PAW_widget::SetupUIElements() {
     ui->Playlist->setContextMenuPolicy(Qt::CustomContextMenu);
-    setAcceptDrops(true); 
+    setAcceptDrops(true);
     ui->Playlist->setAcceptDrops(true);
+
+    ui->Playlist->setColumnCount(3);
+    QStringList headers = { "Title", "Artist", "Duration"};
+    ui->Playlist->setHorizontalHeaderLabels(headers);
+
+    ui->Playlist->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->Playlist->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->Playlist->verticalHeader()->setVisible(false);
+    ui->Playlist->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
 
     ui->TimelineSlider->setStyle(new JumpSliderStyle(ui->TimelineSlider->style()));
     ui->VolumeSlider->setStyle(new JumpSliderStyle(ui->VolumeSlider->style()));
@@ -38,12 +49,17 @@ void Main_PAW_widget::SetupUIElements() {
     connect(ui->actionadd_files_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addFilesToPlaylist);
     connect(ui->actionadd_folders_to_playlist, &QAction::triggered, this, &Main_PAW_widget::on_actionAddFolder_triggered);
     connect(ui->actionadd_current_file_to_playlist, &QAction::triggered, this, &Main_PAW_widget::addCurrentPlayingfileToPlaylist);
+    connect(ui->actionRefresh_playlist_chache, &QAction::triggered, this, &Main_PAW_widget::refreshDatabaseCache);
     connect(ui->actionShow_Details, &QAction::triggered, this, &Main_PAW_widget::showAboutTrackinfo);
     connect(ui->Stop, &QPushButton::clicked, this, &Main_PAW_widget::StopPlayback);
     connect(ui->PreviousTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayPreviousItem);
     connect(ui->NextTrack, &QPushButton::clicked, this, &Main_PAW_widget::PlayNextItem);
-    connect(ui->Playlist, &QListWidget::customContextMenuRequested, this, &Main_PAW_widget::showPlaylistContextMenu);
-    connect(ui->Playlist, &QListWidget::itemDoubleClicked, this, &Main_PAW_widget::playSelectedItem);
+
+    connect(ui->Playlist, &QTableWidget::customContextMenuRequested, this, &Main_PAW_widget::showPlaylistContextMenu);
+    connect(ui->Playlist, &QTableWidget::itemDoubleClicked, this, &Main_PAW_widget::playSelectedItem);
+
+    connect(ui->PlaylistButton, &QPushButton::clicked, this, &Main_PAW_widget::launchPlaylistManager);
+    connect(ui->lineEdit, &QLineEdit::textEdited, this, &Main_PAW_widget::IndexationEvent);
 
     connect(m_audiothread, &PortaudioThread::playbackProgress, this, &Main_PAW_widget::handlePlaybackProgress);
     connect(m_audiothread, &PortaudioThread::totalFileInfo, this, &Main_PAW_widget::handleTotalFileInfo);
@@ -59,7 +75,6 @@ void Main_PAW_widget::SetupQtActions() {
     ui->Playlist->addAction(m_deleteAction);
 }
 
-
 Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::Main_PAW_widget)
@@ -72,22 +87,30 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     m_audiothread = new PortaudioThread(this);
     s = new Settings_PAW_gui(m_audiothread, this);
     about = new About_PAW_gui(this);
+    database = new DatabaseManager(this);
+    playlistmanager = new Playlist_Paw_Manager(database, this);
+    loadtoplaylistbar = new loadingplaylists(this);
 
     if (!loader.load_jsonfile(settings, "settings.json")) {
         settings = nlohmann::json::object();
         settings["save_playlists"] = true;
         settings["auto_skip_tracks"] = true;
-        qDebug() << "Settings not found, using defaults.";
     }
 
     saveplaylist = settings.value("save_playlists", true);
     CanAutoSwitch = settings.value("auto_skip_tracks", true);
 
+    SetupUIElements();
+    SetupQtActions();
+
+    if (saveplaylist) {
+        addFilesToPlaylistfromDatabase(CurrentPlaylistId);
+    }
+
 #ifdef _WIN32
     GlobalKeys::instance().install();
 
     GlobalKeys::instance().setCallback([this](int key) {
-
         QMetaObject::invokeMethod(this, [this, key]() {
             switch (key) {
             case VK_MEDIA_PLAY_PAUSE: PlayPauseButton(); break;
@@ -99,22 +122,6 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
         });
 #endif
 
-    if (saveplaylist) {
-        if (!loader.load_jsonfile(playlist, "playlist.json")) {
-            playlist = nlohmann::json::array();
-            qDebug() << "Playlist file missing, initialized empty array.";
-        }
-        else {
-            addFilesToPlaylistfromJson();
-        }
-    }
-    else {
-        playlist = nlohmann::json::array();
-    }
-
-
-    SetupUIElements();
-    SetupQtActions();
     m_updateTimer = new QTimer(this);
 }
 
@@ -138,7 +145,7 @@ void Main_PAW_widget::dragEnterEvent(QDragEnterEvent* event) {
 void Main_PAW_widget::dropEvent(QDropEvent* event) {
     const QList<QUrl> urls = event->mimeData()->urls();
 
-    static const QStringList supportedFormats = { "mp3", "wav", "flac", "ogg", "opus", "m4a", "aac"};
+    static const QStringList supportedFormats = { "mp3", "wav", "flac", "ogg", "opus", "m4a", "aac" };
 
     for (const QUrl& url : urls) {
         QString filePath = url.toLocalFile();
@@ -156,65 +163,49 @@ void Main_PAW_widget::dropEvent(QDropEvent* event) {
                 ProcessFilesList(filePath);
 
                 if (saveplaylist) {
-                    std::string stdPath = filePath.toStdString();
-                    if (std::find(playlist.begin(), playlist.end(), stdPath) == playlist.end()) {
-                        playlist.push_back(stdPath);
-                    }
+                    database->InflatePlaylist(filePath, CurrentPlaylistId); 
                 }
             }
         }
     }
-
-    if (saveplaylist) {
-        loader.save_config(playlist, "playlist.json");
-    }
 }
 
 void Main_PAW_widget::addFolderToPlaylist(const QString& folderPath) {
-    QStringList filters;
+    QStringList filters, filesFromFolder;
     filters << "*.mp3" << "*.wav" << "*.flac" << "*.ogg" << "*.opus" << "*.m4a" << "*.aac";
 
     QDirIterator it(folderPath, filters, QDir::Files, QDirIterator::Subdirectories);
 
     while (it.hasNext()) {
-        QString filePath = it.next();
-
-        if (saveplaylist) {
-            std::string stdPath = filePath.toStdString();
-            if (std::find(playlist.begin(), playlist.end(), stdPath) == playlist.end()) {
-                playlist.push_back(stdPath);
-            }
-        }
-
-        ProcessFilesList(filePath);
+        filesFromFolder.append(it.next());
     }
 
-    if (saveplaylist) {
-        loader.save_config(playlist, "playlist.json");
-    }
+    ProcessFilesToPlaylist(filesFromFolder);
 }
 
-
-void Main_PAW_widget::start_playback(const QString & filename) {
+void Main_PAW_widget::start_playback(const QString& filename) {
     m_currentFile = filename;
+
+    if (currentItemPlaying) {
+        QFont normalFont = ui->Playlist->font();
+        currentItemPlaying->setFont(normalFont);
+    }
 
     currentItemPlaying = nullptr;
 
-    QFont normalFont = ui->Playlist->font();
-    QFont boldFont = normalFont;
-    boldFont.setBold(true);
+    for (int i = 0; i < ui->Playlist->rowCount(); ++i) {
+        QTableWidgetItem* item = ui->Playlist->item(i, 0); 
 
-    for (int i = 0; i < ui->Playlist->count(); ++i) {
-        QListWidgetItem* item = ui->Playlist->item(i);
-
-        if (item->data(Qt::UserRole).toString() == filename) {
+        if (item && item->data(Qt::UserRole).toString() == filename) {
             currentItemPlaying = item;
 
+            QFont boldFont = ui->Playlist->font();
+            boldFont.setBold(true);
+            item->setFont(boldFont);
+
             ui->Playlist->setCurrentItem(item);
-            item->setFont(boldFont); 
-        }
-        else {
-            item->setFont(normalFont);
+
+            break;
         }
     }
 
@@ -224,13 +215,12 @@ void Main_PAW_widget::start_playback(const QString & filename) {
         m_isSwitching = true;
         disconnect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
         connect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
-        m_audiothread->stop();
+        m_audiothread->stopPlayback();
     }
     else {
         startPendingTrack();
     }
 }
-
 
 void Main_PAW_widget::startPendingTrack() {
     disconnect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
@@ -244,57 +234,105 @@ void Main_PAW_widget::startPendingTrack() {
 }
 
 void Main_PAW_widget::LoadMetadatafromfile() {
+    bool artFound = false;
+    QPixmap coverArt;
     QString filename = m_currentFile;
-
-    file_info_current = { 0 };
+    FileInfo info = { 0 };
     int metadata_result = -1;
 
 #ifdef _WIN32
     std::wstring w_filePath = filename.toStdWString();
-    metadata_result = get_metadata_w(w_filePath.c_str(), &file_info_current);
+    metadata_result = get_metadata_w(w_filePath.c_str(), &info);
 #else
     QByteArray utf8_filePath = filename.toUtf8();
-    metadata_result = get_metadata(utf8_filePath.constData(), &file_info_current);
+    metadata_result = get_metadata(utf8_filePath.constData(), &info);
 #endif
 
-    if (metadata_result == 0) {
-        QPixmap coverArt;
-        bool artFound = false;
+    file_info_current = database->LoadRow(m_currentFile);
+    if (file_info_current.title.isEmpty()) {
+        file_info_current.title = (metadata_result == 0 && info.title && strlen(info.title) > 0)
+            ? QString::fromUtf8(info.title) : filename.section('/', -1);
 
-        QString title = (file_info_current.title && strlen(file_info_current.title) > 0)
-            ? QString::fromUtf8(file_info_current.title)
-            : filename.section('/', -1);
+        file_info_current.artist = (metadata_result == 0 && info.artist && strlen(info.artist) > 0)
+            ? QString::fromUtf8(info.artist) : "Unknown Artist";
 
-        QString artist = (file_info_current.artist && strlen(file_info_current.artist) > 0)
-            ? QString::fromUtf8(file_info_current.artist)
-            : "";
+        file_info_current.album = (metadata_result == 0 && info.album && strlen(info.album) > 0)
+            ? QString::fromUtf8(info.album) : "Unknown Album";
 
-        if (file_info_current.cover_image && file_info_current.cover_size > 0) {
-            if (coverArt.loadFromData(file_info_current.cover_image, file_info_current.cover_size)) {
+        file_info_current.genre = (metadata_result == 0 && info.genre && strlen(info.genre) > 0)
+            ? QString::fromUtf8(info.genre) : "Unknown Genre";
+
+        file_info_current.bitrate = (info.bitrate != NULL) ? info.bitrate : 0;
+
+        if (info.cover_image && info.cover_size > 0) {
+            if (coverArt.loadFromData(info.cover_image, info.cover_size)) {
                 artFound = true;
             }
         }
 
-        if (file_info_current.bitrate > 0) {
-            ui->BitrateInfo->setText(QString::number(file_info_current.bitrate) + " kbps");
-        }
-        else {
-            ui->BitrateInfo->setText("");
-        }
-
-        FileInfo_cleanup(&file_info_current);
-
         m_originalAlbumArt = artFound ? coverArt : QPixmap();
-        this->setWindowTitle(artist + " - " + title);
-        ui->Filename->setText(title);
-        ui->Artist->setText(artist);
     }
     else {
-        ui->Filename->setText(filename.section('/', -1));
-        ui->Artist->setText("");
-        m_originalAlbumArt = QPixmap();
+        m_originalAlbumArt.loadFromData(file_info_current.coverImage);
     }
+
+    FileInfo_cleanup(&info);
+
+    this->setWindowTitle(file_info_current.artist + " - " + file_info_current.title);
+    ui->Filename->setText(file_info_current.title);
+    ui->BitrateInfo->setText(QString::number(file_info_current.bitrate));
+    ui->Artist->setText(file_info_current.artist);
+    ui->AlbumArt->setPixmap(m_originalAlbumArt);
+
     updateAlbumArt();
+}
+
+void Main_PAW_widget::refreshDatabaseCache() {
+    int numElements = ui->Playlist->rowCount();
+
+    if (numElements == 0) {
+        return;
+    }
+
+    loadtoplaylistbar->show();
+    loadtoplaylistbar->raise();
+
+    for (int row = 0; row < numElements; ++row) {
+        QString file = "";
+        QTableWidgetItem* item = ui->Playlist->item(row, 0);
+
+        if (item){
+            file = item->data(Qt::UserRole).toString();
+        }
+
+        if (file.isEmpty()) {
+            continue;
+        }
+
+        int progressbari = ((row + 1) * 100) / numElements;
+
+        QString labelinfo = QString("refreshing %1 in the playlist... %2/%3")
+             .arg(file).arg(row + 1).arg(numElements);
+
+        FileInfo info = { 0 };
+
+#ifdef _WIN32
+        std::wstring w_filePath = file.toStdWString();
+        get_metadata_w(w_filePath.c_str(), &info);
+#else
+        QByteArray utf8_filePath = file.toUtf8();
+        get_metadata(utf8_filePath.constData(), &info);
+#endif
+
+        database->FillRow(info, file);
+
+        loadtoplaylistbar->inflateloadingbar(progressbari, labelinfo);
+
+        QCoreApplication::processEvents();
+        }
+
+    loadtoplaylistbar->hide();
+    addFilesToPlaylistfromDatabase(CurrentPlaylistId);
 }
 
 void Main_PAW_widget::updateAlbumArt()
@@ -382,31 +420,16 @@ void Main_PAW_widget::addCurrentPlayingfileToPlaylist() {
     }
 
     if (saveplaylist) {
-        std::string stdPath = m_currentFile.toStdString();
-        bool alreadyExists = false;
-
-        for (const auto& item : playlist) {
-            if (item.get<std::string>() == stdPath) {
-                alreadyExists = true;
-                break;
-            }
-        }
-
-        if (alreadyExists) {
-            QMessageBox::information(this, "Info", "Track is already in the playlist.");
-            return;
-        }
-
-        playlist.push_back(stdPath);
-        loader.save_config(playlist, "playlist.json");
+        database->InflatePlaylist(m_currentFile, CurrentPlaylistId);
     }
 
     ProcessFilesList(m_currentFile);
 
+    if (ui->Playlist->rowCount() > 0) {
+        int lastRow = ui->Playlist->rowCount() - 1;
+        QTableWidgetItem* newItem = ui->Playlist->item(lastRow, 0);
 
-    if (ui->Playlist->count() > 0) {
-        QListWidgetItem* newItem = ui->Playlist->item(ui->Playlist->count() - 1);
-        if (newItem->data(Qt::UserRole).toString() == m_currentFile) {
+        if (newItem && newItem->data(Qt::UserRole).toString() == m_currentFile) {
             currentItemPlaying = newItem;
 
             QFont boldFont = newItem->font();
@@ -415,6 +438,11 @@ void Main_PAW_widget::addCurrentPlayingfileToPlaylist() {
             ui->Playlist->setCurrentItem(newItem);
         }
     }
+}
+
+void Main_PAW_widget::launchPlaylistManager() {
+    playlistmanager->FetchPlaylists();
+    playlistmanager->show();
 }
 
 void Main_PAW_widget::on_actionAddFolder_triggered() {
@@ -450,7 +478,7 @@ void Main_PAW_widget::StopPlayback() {
         bool oldState = m_audiothread->blockSignals(true);
 
         ClearUi();
-        
+
         this->setWindowTitle("Perfect Audio Works");
 
         m_audiothread->stopPlayback();
@@ -472,61 +500,170 @@ void Main_PAW_widget::ClearUi() {
 
 void Main_PAW_widget::addFilesToPlaylist() {
     QStringList files = QFileDialog::getOpenFileNames(this, "Open audio files", "", "Audio Files (*.mp3 *.wav *.flac *.ogg *.opus *.m4a *.aac);;All Files (*)");
-
-    for (const QString& file : files) {
-        if (saveplaylist) {
-            std::string stdPath = file.toStdString();
-
-            if (std::find(playlist.begin(), playlist.end(), stdPath) == playlist.end()) {
-                playlist.push_back(stdPath);
-            }
-        }
-
-        ProcessFilesList(file);
-    }
-
-    if (saveplaylist) {
-        loader.save_config(playlist, "playlist.json");
-    }
+    ProcessFilesToPlaylist(files);
 }
 
-void Main_PAW_widget::addFilesToPlaylistfromJson() {
-    ui->Playlist->clear();
+void Main_PAW_widget::IndexationEvent(const QString& indextext) {
+    ui->Playlist->setRowCount(0);
+    currentItemPlaying = nullptr;
+    QList<TrackData> indexres = database->IndexResult(indextext, CurrentPlaylistId);
 
-    if (playlist.is_array()) {
-        for (const auto& item : playlist) {
-            QString file = QString::fromStdString(item.get<std::string>());
+    ui->Playlist->setUpdatesEnabled(false);
+
+    for (TrackData& trackInfo : indexres) {
+        QString titleText = trackInfo.title.isEmpty() ? QFileInfo(trackInfo.path).fileName() : trackInfo.title;
+        QString artistText = trackInfo.artist.isEmpty() ? "Unknown Artist" : trackInfo.artist;
+
+        QTableWidgetItem* titleItem = new QTableWidgetItem(titleText);
+        titleItem->setData(Qt::UserRole, trackInfo.path);
+
+        QTableWidgetItem* artistItem = new QTableWidgetItem(artistText);
+
+        int minutes = trackInfo.duration / 60;
+        int seconds = trackInfo.duration % 60;
+
+        QString formattedDuration = QString("%1:%2")
+            .arg(minutes, 2, 10, QChar('0'))
+            .arg(seconds, 2, 10, QChar('0'));
+
+        QTableWidgetItem* durationItem = new QTableWidgetItem(formattedDuration);
+
+        int row = ui->Playlist->rowCount();
+        ui->Playlist->insertRow(row);
+
+        ui->Playlist->setItem(row, 0, titleItem);
+        ui->Playlist->setItem(row, 1, artistItem);
+        ui->Playlist->setItem(row, 2, durationItem);
+    }
+
+    ui->Playlist->setUpdatesEnabled(true);
+}
+
+void Main_PAW_widget::ProcessFilesToPlaylist(QStringList files) {
+    int numElements = files.size();
+    loadtoplaylistbar->show();
+    loadtoplaylistbar->raise();
+
+    for (int i = 0; i < numElements; i++) {
+        QString file = files.at(i);
+        int progressbari = (i * 100) / numElements;
+
+        if (!database->TrackExists(file)) {
+            QString labelinfo = QString("adding %1 to the playlist... %2/%3")
+                .arg(file).arg(i + 1).arg(numElements);
+
+            FileInfo info = { 0 };
+
+#ifdef _WIN32
+            std::wstring w_filePath = file.toStdWString();
+            get_metadata_w(w_filePath.c_str(), &info);
+#else
+            QByteArray utf8_filePath = file.toUtf8();
+            get_metadata(utf8_filePath.constData(), &info);
+#endif
+
+
+            database->FillRow(info, file);
+            if (saveplaylist) {
+                database->InflatePlaylist(file, CurrentPlaylistId);
+            }
+
+            loadtoplaylistbar->inflateloadingbar(progressbari, labelinfo);
+
+            QCoreApplication::processEvents();
+
             ProcessFilesList(file);
         }
     }
+
+    loadtoplaylistbar->hide();
+}
+
+void Main_PAW_widget::addFilesToPlaylistfromDatabase(int id) {
+    CurrentPlaylistId = id;
+
+    currentItemPlaying = nullptr;
+
+    ui->Playlist->blockSignals(true);
+
+    ui->Playlist->setUpdatesEnabled(false);
+    ui->Playlist->setRowCount(0);
+
+    QList<TrackData> tracklist = database->LoadPlaylist(id);
+
+    for (TrackData& trackInfo : tracklist) {
+        QString titleText = trackInfo.title.isEmpty() ? QFileInfo(trackInfo.path).fileName() : trackInfo.title;
+        QString artistText = trackInfo.artist.isEmpty() ? "Unknown Artist" : trackInfo.artist;
+
+        QTableWidgetItem* titleItem = new QTableWidgetItem(titleText);
+        titleItem->setData(Qt::UserRole, trackInfo.path);
+
+        QTableWidgetItem* artistItem = new QTableWidgetItem(artistText);
+
+        int minutes = trackInfo.duration / 60;
+        int seconds = trackInfo.duration % 60;
+
+        QString formattedDuration = QString("%1:%2")
+            .arg(minutes, 2, 10, QChar('0'))
+            .arg(seconds, 2, 10, QChar('0'));
+
+        QTableWidgetItem* durationItem = new QTableWidgetItem(formattedDuration);
+
+        int row = ui->Playlist->rowCount();
+        ui->Playlist->insertRow(row);
+
+        ui->Playlist->setItem(row, 0, titleItem);
+        ui->Playlist->setItem(row, 1, artistItem);
+        ui->Playlist->setItem(row, 2, durationItem);
+    }
+
+    ui->Playlist->setUpdatesEnabled(true);
+
+    ui->Playlist->blockSignals(false);
 }
 
 void Main_PAW_widget::ProcessFilesList(const QString& file) {
-    FileInfo file_info;
     int metadata_result = -1;
-    QString displayText;
+    TrackData trackInfo = database->LoadRow(file);
+
+    if (trackInfo.title.isEmpty()) {
+        FileInfo info = { 0 };
 
 #ifdef _WIN32
-    std::wstring w_filePath = file.toStdWString();
-    metadata_result = get_metadata_w(w_filePath.c_str(), &file_info);
+        std::wstring w_filePath = file.toStdWString();
+        metadata_result = get_metadata_w(w_filePath.c_str(), &info);
 #else
-    QByteArray utf8_filePath = file.toUtf8();
-    metadata_result = get_metadata(utf8_filePath.constData(), &file_info);
+        QByteArray utf8_filePath = file.toUtf8(); 
+        metadata_result = get_metadata(utf8_filePath.constData(), &info);
 #endif
-
-    if (metadata_result == 0) {
-        QString title = (strlen(file_info.title) > 0) ? QString::fromUtf8(file_info.title) : QFileInfo(file).fileName();
-        QString artist = (strlen(file_info.artist) > 0) ? QString::fromUtf8(file_info.artist) : "";
-        displayText = artist.isEmpty() ? title : artist + " - " + title;
-        FileInfo_cleanup(&file_info);
-    }
-    else {
-        displayText = QFileInfo(file).fileName();
+        database->FillRow(info, file);
+        trackInfo = database->LoadRow(file);
     }
 
-    QListWidgetItem* item = new QListWidgetItem(displayText);
-    item->setData(Qt::UserRole, file);
-    ui->Playlist->addItem(item);
+    QString titleText = trackInfo.title.isEmpty() ? QFileInfo(file).fileName() : trackInfo.title;
+    QString artistText = trackInfo.artist.isEmpty() ? "Unknown Artist" : trackInfo.artist;
+
+
+    QTableWidgetItem* titleItem = new QTableWidgetItem(titleText);
+    titleItem->setData(Qt::UserRole, file);
+
+    QTableWidgetItem* artistItem = new QTableWidgetItem(artistText);
+
+    int minutes = trackInfo.duration / 60;
+    int seconds = trackInfo.duration % 60;
+
+    QString formattedDuration = QString("%1:%2")
+        .arg(minutes, 2, 10, QChar('0'))
+        .arg(seconds, 2, 10, QChar('0'));
+
+    QTableWidgetItem* durationItem = new QTableWidgetItem(formattedDuration);
+
+    int row = ui->Playlist->rowCount();
+    ui->Playlist->insertRow(row);
+
+    ui->Playlist->setItem(row, 0, titleItem); 
+    ui->Playlist->setItem(row, 1, artistItem);
+    ui->Playlist->setItem(row, 2, durationItem);
 }
 
 void Main_PAW_widget::playSelectedItem() {
@@ -538,8 +675,8 @@ void Main_PAW_widget::playSelectedItem() {
 
 void Main_PAW_widget::PlayNextItem() {
     if (!currentItemPlaying) {
-        if (ui->Playlist->count() > 0) {
-            ui->Playlist->setCurrentRow(0);
+        if (ui->Playlist->rowCount() > 0) {
+            ui->Playlist->setCurrentCell(0, 0); 
             playSelectedItem();
         }
         return;
@@ -548,11 +685,12 @@ void Main_PAW_widget::PlayNextItem() {
     int currentRow = ui->Playlist->row(currentItemPlaying);
     int nextRow = currentRow + 1;
 
-    if (nextRow >= ui->Playlist->count()) return;
+    if (nextRow >= ui->Playlist->rowCount()) return;
 
-    QListWidgetItem* nextItem = ui->Playlist->item(nextRow);
+    QTableWidgetItem* nextItem = ui->Playlist->item(nextRow, 0); 
+    if (!nextItem) return;
+
     QString filename = nextItem->data(Qt::UserRole).toString();
-
     start_playback(filename);
 }
 
@@ -564,9 +702,10 @@ void Main_PAW_widget::PlayPreviousItem() {
 
     if (previousRow < 0) return;
 
-    QListWidgetItem* previousItem = ui->Playlist->item(previousRow);
-    QString filename = previousItem->data(Qt::UserRole).toString();
+    QTableWidgetItem* previousItem = ui->Playlist->item(previousRow, 0); 
+    if (!previousItem) return;
 
+    QString filename = previousItem->data(Qt::UserRole).toString();
     start_playback(filename);
 }
 
@@ -576,20 +715,25 @@ void Main_PAW_widget::deleteSelectedItem()
 
     if (currentRow >= 0)
     {
+        QTableWidgetItem* itemToDelete = ui->Playlist->item(currentRow, 0); 
+        if (!itemToDelete) return;
 
-        QListWidgetItem* itemToDelete = ui->Playlist->item(currentRow);
+        QString filePath = itemToDelete->data(Qt::UserRole).toString();
+
+        if (saveplaylist && CurrentPlaylistId != -1) {
+            database->RemoveFromPlaylist(filePath, CurrentPlaylistId);
+        }
+
         if (itemToDelete == currentItemPlaying) {
-            currentItemPlaying = nullptr;
-            StopPlayback(); 
+            PlayNextItem();
+
+            if (itemToDelete == currentItemPlaying) {
+                StopPlayback();
+                currentItemPlaying = nullptr;
+            }
         }
 
-
-        if (playlist.is_array() && currentRow < playlist.size()) {
-            loader.RemoveItemByIndex(playlist, currentRow);
-            loader.save_config(playlist, "playlist.json");
-        }
-
-        delete ui->Playlist->takeItem(currentRow);
+        ui->Playlist->removeRow(currentRow); 
     }
     else {
         qWarning() << "No item selected to delete.";
@@ -597,7 +741,7 @@ void Main_PAW_widget::deleteSelectedItem()
 }
 
 void Main_PAW_widget::showPlaylistContextMenu(const QPoint& pos) {
-    QListWidgetItem* clickedItem = ui->Playlist->itemAt(pos);
+    QTableWidgetItem* clickedItem = ui->Playlist->itemAt(pos); 
     bool itemClicked = (clickedItem != nullptr);
 
     QMenu contextMenu(this);
@@ -607,11 +751,14 @@ void Main_PAW_widget::showPlaylistContextMenu(const QPoint& pos) {
 
     connect(showDetailsAction, &QAction::triggered, this, [=]() {
         if (!aboutfile) {
-            aboutfile = new Aboutfile_PAW_gui(this);
+            aboutfile = new Aboutfile_PAW_gui(database, this);
         }
 
         if (clickedItem) {
-            QString filePath = clickedItem->data(Qt::UserRole).toString();
+            int row = ui->Playlist->row(clickedItem);
+            QTableWidgetItem* titleColItem = ui->Playlist->item(row, 0);
+
+            QString filePath = titleColItem->data(Qt::UserRole).toString();
             aboutfile->setdata(filePath);
 
             aboutfile->show();
@@ -628,15 +775,15 @@ void Main_PAW_widget::showPlaylistContextMenu(const QPoint& pos) {
         contextMenu.addAction(m_deleteAction);
     }
 
-    contextMenu.exec(ui->Playlist->mapToGlobal(pos));
+    contextMenu.exec(ui->Playlist->viewport()->mapToGlobal(pos)); 
 }
 
 void Main_PAW_widget::showAboutTrackinfo() {
     if (!aboutfile) {
-        aboutfile = new Aboutfile_PAW_gui(this);
+        aboutfile = new Aboutfile_PAW_gui(database, this);
     }
 
-    if (m_currentFile != nullptr) {
+    if (!m_currentFile.isEmpty()) {
         aboutfile->setdata(m_currentFile);
 
         aboutfile->show();
@@ -683,9 +830,14 @@ void Main_PAW_widget::SetLoop() {
 }
 
 QString Main_PAW_widget::returnItemPath() {
-    QListWidgetItem* item = ui->Playlist->currentItem();
+    QTableWidgetItem* item = ui->Playlist->currentItem(); 
     if (!item) return QString();
-    QString filepath = item->data(Qt::UserRole).toString();
+
+    int row = ui->Playlist->row(item);
+    QTableWidgetItem* titleItem = ui->Playlist->item(row, 0);
+    if (!titleItem) return QString();
+
+    QString filepath = titleItem->data(Qt::UserRole).toString();
     return filepath;
 }
 

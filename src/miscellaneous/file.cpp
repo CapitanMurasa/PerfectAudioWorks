@@ -193,6 +193,7 @@ static int process_file_internal(TagLib::FileRef& f, FileInfo* info, const char*
         info->bitrate = props->bitrate();
         info->sampleRate = props->sampleRate();
         info->channels = props->channels();
+        info->durationSeconds = props->lengthInSeconds();
     }
     else {
         info->length = 0; info->bitrate = 0; info->sampleRate = 0; info->channels = 0;

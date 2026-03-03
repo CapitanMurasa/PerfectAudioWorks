@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
-project(PerfectAudioWorks VERSION 0.1.2 LANGUAGES CXX C)
+project(PerfectAudioWorks VERSION 0.1.3 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if (UNIX)
-    find_package(Qt6 REQUIRED COMPONENTS Core Widgets DBus Network)
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets DBus Network Sql)
 else()
-    find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Sql)
 endif()
 
 set(CMAKE_AUTORCC ON)
@@ -24,13 +24,16 @@ set(SOURCES
     src/main.cpp
     src/assets/resources.rc
     src/assets.qrc
+
     src/AudioPharser/AudioRingBuffer.c
     src/AudioPharser/PortAudioHandler.cpp
     src/AudioPharser/CodecHandler.c
     src/AudioPharser/portaudio_backend.c
+
     src/miscellaneous/file.cpp 
     src/miscellaneous/json.cpp
     src/miscellaneous/misc.c
+    src/miscellaneous/DatabaseManager.cpp
     
     src/PAW_GUI/about_paw_gui.ui
     src/PAW_GUI/about_paw_gui.cpp
@@ -40,6 +43,10 @@ set(SOURCES
     src/PAW_GUI/settings_paw_gui.cpp
     src/PAW_GUI/main_paw_widget.ui
     src/PAW_GUI/main_paw_widget.cpp
+    src/PAW_GUI/playlist_paw_manager.ui
+    src/PAW_GUI/playlist_paw_manager.cpp
+    src/PAW_GUI/loadingplaylists.cpp
+    src/PAW_GUI/loadingplaylists.ui
     
     src/PAW_GUI/ScrollingLabel.h
     src/PAW_GUI/ScrollingLabel.cpp
@@ -175,7 +182,8 @@ target_link_libraries(PAW PRIVATE
     Qt6::Core 
     Qt6::Widgets 
     Qt6::Network
-    Qt6::DBus 
+    Qt6::DBus
+    Qt6::Sql
     pybind11::embed
     Python3::Python      
     ${PORTAUDIO_TARGET}
@@ -187,6 +195,7 @@ target_link_libraries(PAW PRIVATE
     Qt6::Core 
     Qt6::Widgets 
     Qt6::Network
+    Qt6::Sql
     pybind11::embed
     Python3::Python      
     ${PORTAUDIO_TARGET}

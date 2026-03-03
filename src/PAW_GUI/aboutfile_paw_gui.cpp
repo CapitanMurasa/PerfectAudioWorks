@@ -2,9 +2,10 @@
 #include "ui_aboutfile_paw_gui.h" 
 #include "../miscellaneous/file.h"
 
-Aboutfile_PAW_gui::Aboutfile_PAW_gui(QWidget* parent) :
+Aboutfile_PAW_gui::Aboutfile_PAW_gui(DatabaseManager* db, QWidget* parent) :
     QMainWindow(parent),
-    ui(new Ui::Aboutfile_PAW_gui)
+    ui(new Ui::Aboutfile_PAW_gui),
+    m_database(db)
 {
     ui->setupUi(this);
 }
@@ -14,7 +15,7 @@ Aboutfile_PAW_gui::~Aboutfile_PAW_gui()
     delete ui;
 }
 
-void Aboutfile_PAW_gui::setdata(QListWidgetItem* item) {
+void Aboutfile_PAW_gui::setdata(QTableWidgetItem* item) {
     if (item) {
         QString path = item->data(Qt::UserRole).toString();
         if (path.isEmpty()) path = item->text();
@@ -35,48 +36,39 @@ void Aboutfile_PAW_gui::setdata(const QString& filename) {
     metadata_result = get_metadata(utf8_filePath.constData(), &filemetadata);
 #endif
 
-    if (metadata_result == 0) {
-        QPixmap coverArt;
-        bool artFound = false;
+    TrackData trackInfo = m_database->LoadRow(filename);
 
+    if (trackInfo.title.isEmpty() && metadata_result == 0) {
+        m_database->FillRow(filemetadata, filename);
+        trackInfo = m_database->LoadRow(filename);
+    }
 
-        QString title = (filemetadata.title[0] != '\0')
-            ? QString::fromUtf8(filemetadata.title)
-            : filename.section('/', -1);
+    if (!trackInfo.title.isEmpty()) {
+        ui->val_name->setText(trackInfo.title);
+        ui->val_artist->setText(trackInfo.artist.isEmpty() ? "Unknown Artist" : trackInfo.artist);
+        ui->val_album->setText(trackInfo.album.isEmpty() ? "Unknown Album" : trackInfo.album);
+        ui->val_genre->setText(trackInfo.genre.isEmpty() ? "-" : trackInfo.genre);
+        ui->val_type->setText(trackInfo.format.isEmpty() ? "AUDIO" : trackInfo.format.toUpper());
 
-        QString artist = (filemetadata.artist[0] != '\0')
-            ? QString::fromUtf8(filemetadata.artist)
-            : "Unknown Artist";
-
-        QString album = (filemetadata.album[0] != '\0')
-            ? QString::fromUtf8(filemetadata.album)
-            : "Unknown Album";
-
-        QString genre = (filemetadata.genre[0] != '\0')
-            ? QString::fromUtf8(filemetadata.genre)
-            : "-";
-
-        QString format = (filemetadata.format[0] != '\0')
-            ? QString::fromUtf8(filemetadata.format).toUpper()
-            : "AUDIO";
-
-
-        if (filemetadata.cover_image && filemetadata.cover_size > 0) {
-
-            if (coverArt.loadFromData(filemetadata.cover_image, static_cast<uint>(filemetadata.cover_size))) {
-                artFound = true;
-            }
+        if (!trackInfo.coverImage.isEmpty()) {
+            m_originalAlbumArt.loadFromData(trackInfo.coverImage, "JPG");
         }
+        else {
+            m_originalAlbumArt = QPixmap();
+        }
+    }
+    else {
+        ui->val_name->setText(filename.section('/', -1));
+        ui->val_artist->setText("-");
+        ui->val_album->setText("-");
+        ui->val_genre->setText("-");
+        ui->val_type->setText("-");
+        m_originalAlbumArt = QPixmap();
+    }
 
+    ui->val_location->setText(filename);
 
-        ui->val_name->setText(title);
-        ui->val_album->setText(album);
-        ui->val_artist->setText(artist);
-        ui->val_genre->setText(genre);
-        ui->val_location->setText(filename);
-        ui->val_type->setText(format);
-
-
+    if (metadata_result == 0) {
         if (filemetadata.channels == 1) {
             ui->val_channels->setText("Mono (1)");
         }
@@ -87,32 +79,16 @@ void Aboutfile_PAW_gui::setdata(const QString& filename) {
             ui->val_channels->setText(QString::number(filemetadata.channels) + " channels");
         }
 
-
         ui->val_samplerate->setText(QString::number(filemetadata.sampleRate) + " Hz");
-
-
         ui->val_bitrate->setText(QString::number(filemetadata.bitrate) + " kbps");
-
-
-        FileInfo_cleanup(&filemetadata);
-
-
-        m_originalAlbumArt = artFound ? coverArt : QPixmap();
     }
     else {
-        ui->val_name->setText(filename.section('/', -1));
-        ui->val_album->setText("-");
-        ui->val_artist->setText("-");
-        ui->val_genre->setText("-");
-        ui->val_location->setText(filename);
-        ui->val_type->setText("-");
         ui->val_channels->setText("-");
         ui->val_samplerate->setText("-");
         ui->val_bitrate->setText("-");
-
-        m_originalAlbumArt = QPixmap();
     }
 
+    FileInfo_cleanup(&filemetadata);
     updateAlbumArt();
 }
 
@@ -123,7 +99,6 @@ void Aboutfile_PAW_gui::updateAlbumArt()
         ui->val_art->setStyleSheet("background-color: #e0e0e0; border: 1px solid #c0c0c0; color: #555;");
         return;
     }
-
 
     ui->val_art->setText("");
     ui->val_art->setStyleSheet("border: 1px solid #c0c0c0;");
@@ -138,5 +113,5 @@ void Aboutfile_PAW_gui::updateAlbumArt()
 void Aboutfile_PAW_gui::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
-    updateAlbumArt(); 
+    updateAlbumArt();
 }

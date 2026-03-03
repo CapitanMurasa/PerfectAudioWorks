@@ -12,11 +12,14 @@
 
 #include "../AudioPharser/PortAudioHandler.h" 
 #include "../miscellaneous/file.h" 
-#include "../miscellaneous/json.h" 
+#include "../miscellaneous/json.h"
+#include "../miscellaneous/DatabaseManager.h"
 
 #include "settings_paw_gui.h"
 #include "about_paw_gui.h"
 #include "aboutfile_paw_gui.h"
+#include "playlist_paw_manager.h"
+#include "loadingplaylists.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -25,6 +28,10 @@ class Main_PAW_widget;
 QT_END_NAMESPACE
 
 class Settings_PAW_gui;
+class DatabaseManager;
+class Playlist_Paw_Manager;
+class loadingplaylists;
+class QTableWidgetItem;
 
 class Main_PAW_widget : public QMainWindow
 {
@@ -38,12 +45,14 @@ public:
     void PlayNextItem();
     void StopPlayback();
     void PlayPauseButton();
+    void addFilesToPlaylistfromDatabase(int id);
 
-    FileInfo file_info_current;
+    TrackData file_info_current;
 
     QString returnTimeElapsed();
     QString returnTimeStamp();
     QString m_currentFile;
+    int CurrentPlaylistId = 1;
 
     bool CanAutoSwitch = true;
 
@@ -73,6 +82,8 @@ private slots:
     void openSettings();
     void on_actionAddFolder_triggered();
     void openAbout();
+    void IndexationEvent(const QString& indextext);
+    void refreshDatabaseCache();
 
 private:
 
@@ -80,13 +91,16 @@ private:
     QAction *m_deleteAction;
     PortaudioThread* m_audiothread; 
     FileInfo filemetadata;
-    QListWidgetItem* currentItemPlaying;
+    QTableWidgetItem* currentItemPlaying;
     QPixmap m_originalAlbumArt;      
     Settings_PAW_gui *s;
     Aboutfile_PAW_gui *aboutfile;
     About_PAW_gui *about;
     JsonLoader loader;
     QSystemTrayIcon *trayIcon;
+    DatabaseManager *database;
+    Playlist_Paw_Manager *playlistmanager;
+    loadingplaylists *loadtoplaylistbar;
     float currentDuration;
     float totalDuration;
 
@@ -95,10 +109,11 @@ private:
     void SetupUIElements();
     void startPendingTrack();
     void SetupQtActions();
+    void ProcessFilesToPlaylist(QStringList files);
+    void launchPlaylistManager();
     void LoadMetadatafromfile();
     QString returnItemPath();
     void ProcessFilesList(const QString& file);
-    void addFilesToPlaylistfromJson();
     void ClearUi();
 
     void dragEnterEvent(QDragEnterEvent* event) override;
@@ -111,7 +126,6 @@ private:
     bool saveplaylist;
 
     json settings;
-    json playlist;
 
     Ui::Main_PAW_widget *ui; 
 };

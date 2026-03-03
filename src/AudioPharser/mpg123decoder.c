@@ -54,7 +54,7 @@ MPG123Decoder* MPG123Decoder_open_w(const wchar_t* filename_w) {
 
     return dec;
 }
-#endif // <-- FIX 5: This #endif was missing
+#endif 
 
 MPG123Decoder* MPG123Decoder_open(const char* filename) {
     if (mpg123_init() != MPG123_OK) return NULL;

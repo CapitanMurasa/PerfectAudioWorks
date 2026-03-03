@@ -16,6 +16,7 @@ typedef struct {
     int channels;
     int bitrate;
     int length;
+    int durationSeconds;
 
 
 #if _WIN32
