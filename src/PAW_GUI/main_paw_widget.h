@@ -55,6 +55,7 @@ public:
     int CurrentPlaylistId = 1;
 
     bool CanAutoSwitch = true;
+    void showdebuginfo(bool condition);
 
     
     PortaudioThread& getAudioThread() { return *m_audiothread; }

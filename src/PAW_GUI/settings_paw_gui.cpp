@@ -61,6 +61,7 @@ Settings_PAW_gui::Settings_PAW_gui(PortaudioThread* audioThread, Main_PAW_widget
         settings["auto_skip_tracks"] = true;
         settings["use_external_album_art"] = true;
         settings["use_plugins"] = false;
+        settings["use_detailed_info"] = false;
 
         loader.save_config(settings, "settings.json");
 
@@ -133,6 +134,10 @@ void Settings_PAW_gui::SetupJson() {
         m_audiothread->changeAudioDevice(deviceId);
     }
 
+    bool SongDebug = settings.value("use_detailed_info", false);
+    ui->EnableDebugInfo->setChecked(SongDebug);
+    if (mainwidget) mainwidget->showdebuginfo(SongDebug);
+
     bool savePl = settings.value("save_playlists", true);
     ui->SavePlaylistsCheck->setChecked(savePl);
 
@@ -169,6 +174,10 @@ void Settings_PAW_gui::applySettings() {
     bool UsePlugins = ui->enablePLuginsSupportCheckBox->isChecked();
     settings["use_plugins"] = UsePlugins;
     usePlugins = UsePlugins;
+
+    bool SongDebug = ui->EnableDebugInfo->isChecked();
+    settings["use_detailed_info"] = SongDebug;
+    if (mainwidget) mainwidget->showdebuginfo(SongDebug);
 
     loader.save_config(settings, "settings.json");
     ShowMessageBox(PAW_INFO, "Settings applied", "Settings applied and saved.");

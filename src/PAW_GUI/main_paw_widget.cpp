@@ -222,6 +222,19 @@ void Main_PAW_widget::start_playback(const QString& filename) {
     }
 }
 
+void Main_PAW_widget::showdebuginfo(bool condition) {
+    ui->label->setVisible(condition);           
+    ui->SampleRateinfo->setVisible(condition);
+    ui->label_3->setVisible(condition);         
+    ui->BitrateInfo->setVisible(condition);
+    ui->label_2->setVisible(condition);         
+    ui->CodecProcessorinfo->setVisible(condition);
+    ui->label_4->setVisible(condition);         
+    ui->ChannelsInfo->setVisible(condition);
+
+    this->layout()->activate();
+}
+
 void Main_PAW_widget::startPendingTrack() {
     disconnect(m_audiothread, &QThread::finished, this, &Main_PAW_widget::startPendingTrack);
 
