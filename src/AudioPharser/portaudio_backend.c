@@ -85,7 +85,7 @@ int audio_callback_c(const void* input, void* output, unsigned long frameCount,
         size_t copySize = (samplesRead > 1024) ? 1024 : samplesRead;
         if (copySize > 0) {
             memcpy(player->visualizerBuffer, out, copySize * sizeof(float));
-            player->visualizerSize = copySize; // <-- Save it here!
+            player->visualizerSize = copySize;
         }
     }
 
