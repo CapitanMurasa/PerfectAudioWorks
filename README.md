@@ -102,6 +102,7 @@ pacman -S mingw-w64-ucrt-x86_64-toolchain \
                    mingw-w64-ucrt-x86_64-mpg123 \
                    mingw-w64-ucrt-x86_64-taglib \
                    mingw-w64-ucrt-x86_64-python \
+                   mingw-w64-ucrt-x86_64-libva \
                    mingw-w64-ucrt-x86_64-nsis
 ```
 
