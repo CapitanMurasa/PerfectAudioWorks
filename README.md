@@ -89,7 +89,7 @@ sudo dnf install cmake gcc-c++ make qt6-qtbase-devel \
 
 ### Windows
 Although windows release is out, it still less stable than linux release <br>
-install !(mysys2)[https://www.msys2.org/] and then from ucrt64 console install required components 
+install (mysys2)[https://www.msys2.org/] and then from ucrt64 console install required components 
 ```
 pacman -S mingw-w64-ucrt-x86_64-toolchain \
                    mingw-w64-ucrt-x86_64-cmake \
