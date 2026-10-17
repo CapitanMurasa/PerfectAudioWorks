@@ -128,16 +128,13 @@ if(ENABLE_FFMPEG)
 endif()
 
 # --- TagLib ---
-set(TAGLIB_DIR "${CMAKE_SOURCE_DIR}/extern/taglib")
-if(EXISTS ${TAGLIB_DIR}/CMakeLists.txt)
-    add_subdirectory(${TAGLIB_DIR} EXCLUDE_FROM_ALL)
-    target_include_directories(PAW PRIVATE ${TAGLIB_DIR}/taglib)
-    set(TAGLIB_TARGET tag)
-    if(WIN32 OR MINGW)
-        target_compile_definitions(tag PRIVATE TAGLIB_WITH_WINDOWS_ENCODING)
-    endif()
+find_path(TAGLIB_INCLUDE_DIR taglib/taglib.h)
+find_library(TAGLIB_LIB NAMES tag)
+if(TAGLIB_INCLUDE_DIR AND TAGLIB_LIB)
+    target_include_directories(PAW PRIVATE ${TAGLIB_INCLUDE_DIR})
+    set(TAGLIB_TARGET ${TAGLIB_LIB})
 else()
-    message(FATAL_ERROR "TagLib source not found.")
+    message(FATAL_ERROR "TagLib system package not found.")
 endif()
 
 # --- nlohmann_json ---

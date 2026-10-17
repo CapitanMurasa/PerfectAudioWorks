@@ -122,16 +122,17 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
         return;
     }
 
-    QString targetAlbum = QString::fromStdString(file.album).trimmed();
-    QString targetTitle = QString::fromStdString(file.title).trimmed();
+    QString targetAlbum  = QString::fromStdString(file.album).trimmed();
+    QString targetTitle  = QString::fromStdString(file.title).trimmed();
     QString targetArtist = QString::fromStdString(file.artist).trimmed();
-    QString targetGenre = QString::fromStdString(file.genre).trimmed();
+    QString targetGenre  = QString::fromStdString(file.genre).trimmed();
+    QString targetFormat = QString::fromStdString(file.format).trimmed();
 
     if (targetAlbum.isEmpty()) {
         targetAlbum = targetTitle.isEmpty() ? "Unknown Album" : targetTitle;
     }
     if (targetArtist.isEmpty()) targetArtist = "Unknown Artist";
-    if (targetGenre.isEmpty()) targetGenre = "Unknown Genre";
+    if (targetGenre.isEmpty())  targetGenre  = "Unknown Genre";
 
     QByteArray coverBlob;
     if (file.cover_image && file.cover_size > 0) {
@@ -140,61 +141,49 @@ void DatabaseManager::FillRow(FileInfo file, QString path) {
 
     QSqlQuery query(db);
 
-    query.prepare("INSERT OR IGNORE INTO formats (name) VALUES (:name)");
-    query.bindValue(":name", QString::fromStdString(file.format));
-    query.exec();
+    // Upsert lookup table and return ID in a single query
+    auto getOrInsertId = [&](const QString& table, const QString& val) -> int {
+        query.prepare(QString("INSERT INTO %1 (name) VALUES (:val) "
+                              "ON CONFLICT(name) DO UPDATE SET name=excluded.name "
+                              "RETURNING id").arg(table));
+        query.bindValue(":val", val);
+        if (query.exec() && query.next()) {
+            return query.value(0).toInt();
+        }
+        return -1;
+    };
 
-    query.prepare("SELECT id FROM formats WHERE name = :name");
-    query.bindValue(":name", QString::fromStdString(file.format));
-    query.exec();
-    int formatId = -1;
-    if (query.next()) formatId = query.value(0).toInt();
+    int formatId = getOrInsertId("formats", targetFormat);
+    int genreId  = getOrInsertId("genres", targetGenre);
+    int artistId = getOrInsertId("artists", targetArtist);
 
-    query.prepare("INSERT OR IGNORE INTO genres (name) VALUES (:name)");
-    query.bindValue(":name", targetGenre);
-    query.exec();
-
-    query.prepare("SELECT id FROM genres WHERE name = :name");
-    query.bindValue(":name", targetGenre);
-    query.exec();
-    int genreId = -1;
-    if (query.next()) genreId = query.value(0).toInt();
-
-    query.prepare("INSERT OR IGNORE INTO artists (name) VALUES (:name)");
-    query.bindValue(":name", targetArtist);
-    query.exec();
-
-    query.prepare("SELECT id FROM artists WHERE name = :name");
-    query.bindValue(":name", targetArtist);
-    query.exec();
-    int artistId = -1;
-    if (query.next()) artistId = query.value(0).toInt();
-
-    query.prepare("INSERT OR IGNORE INTO albums (title, cover_image) VALUES (:title, :cover)");
+    // Upsert album and return ID
+    query.prepare("INSERT INTO albums (title, cover_image) VALUES (:title, :cover) "
+                  "ON CONFLICT(title) DO UPDATE SET cover_image = COALESCE(excluded.cover_image, albums.cover_image) "
+                  "RETURNING id");
     query.bindValue(":title", targetAlbum);
     if (coverBlob.isEmpty()) {
         query.bindValue(":cover", QVariant(QMetaType::fromType<QByteArray>()));
     } else {
         query.bindValue(":cover", coverBlob);
     }
-    query.exec();
 
-    query.prepare("SELECT id FROM albums WHERE title = :title");
-    query.bindValue(":title", targetAlbum);
-    query.exec();
     int albumId = -1;
-    if (query.next()) albumId = query.value(0).toInt();
+    if (query.exec() && query.next()) {
+        albumId = query.value(0).toInt();
+    }
 
+    // Upsert track entry
     query.prepare("INSERT INTO tracks (path, title, bitrate, genre_id, artist_id, album_id, format_id, duration_s) "
-    "VALUES (:path, :title, :bitrate, :genre_id, :artist_id, :album_id, :format_id, :duration_s) "
-    "ON CONFLICT(path) DO UPDATE SET "
-    "title=excluded.title, "
-    "bitrate=excluded.bitrate, "
-    "genre_id=excluded.genre_id, "
-    "artist_id=excluded.artist_id, "
-    "album_id=excluded.album_id, "
-    "format_id=excluded.format_id, "
-    "duration_s=excluded.duration_s");
+                  "VALUES (:path, :title, :bitrate, :genre_id, :artist_id, :album_id, :format_id, :duration_s) "
+                  "ON CONFLICT(path) DO UPDATE SET "
+                  "title=excluded.title, "
+                  "bitrate=excluded.bitrate, "
+                  "genre_id=excluded.genre_id, "
+                  "artist_id=excluded.artist_id, "
+                  "album_id=excluded.album_id, "
+                  "format_id=excluded.format_id, "
+                  "duration_s=excluded.duration_s");
 
     query.bindValue(":path", path);
     query.bindValue(":title", QString::fromStdString(file.title));
@@ -357,44 +346,32 @@ TrackData DatabaseManager::LoadRow(QString path) {
     QSqlDatabase db = QSqlDatabase::database("PAW_CONNECTION");
     QSqlQuery query(db);
 
-    query.prepare("SELECT * from tracks WHERE path = :path");
+    query.prepare(
+        "SELECT t.path, t.title, t.bitrate, t.duration_s, "
+        "       a.name AS artist, "
+        "       al.title AS album, al.cover_image, "
+        "       g.name AS genre, "
+        "       f.name AS format "
+        "FROM tracks t "
+        "LEFT JOIN artists a  ON t.artist_id = a.id "
+        "LEFT JOIN albums al  ON t.album_id  = al.id "
+        "LEFT JOIN genres g   ON t.genre_id  = g.id "
+        "LEFT JOIN formats f  ON t.format_id = f.id "
+        "WHERE t.path = :path"
+    );
     query.bindValue(":path", path);
 
     if (query.exec() && query.next()) {
-        data.found = true;
-        data.path = query.value(1).toString();
-        data.title = query.value(2).toString();
-        data.bitrate = query.value(3).toInt();
-        data.duration = query.value(8).toInt();
-        int artistId = query.value(4).toInt();
-        int genreId = query.value(5).toInt();
-        int albumId = query.value(6).toInt();
-        int formatId = query.value(7).toInt();
-
-        query.prepare("SELECT name from artists WHERE id = :artist");
-        query.bindValue(":artist", artistId);
-        if (query.exec() && query.next()) {
-            data.artist = query.value(0).toString();
-        }
-
-        query.prepare("SELECT title, cover_image from albums WHERE id = :album");
-        query.bindValue(":album", albumId);
-        if (query.exec() && query.next()) {
-            data.album = query.value(0).toString();
-            data.coverImage = query.value(1).toByteArray();
-        }
-
-        query.prepare("SELECT name from genres WHERE id = :genre");
-        query.bindValue(":genre", genreId);
-        if (query.exec() && query.next()) {
-            data.genre = query.value(0).toString();
-        }
-
-        query.prepare("SELECT name from formats WHERE id = :format");
-        query.bindValue(":format", formatId);
-        if (query.exec() && query.next()) {
-            data.format = query.value(0).toString();
-        }
+        data.found      = true;
+        data.path       = query.value(0).toString();
+        data.title      = query.value(1).toString();
+        data.bitrate    = query.value(2).toInt();
+        data.duration   = query.value(3).toInt();
+        data.artist     = query.value(4).toString();
+        data.album      = query.value(5).toString();
+        data.coverImage = query.value(6).toByteArray();
+        data.genre      = query.value(7).toString();
+        data.format     = query.value(8).toString();
     }
 
     return data;
