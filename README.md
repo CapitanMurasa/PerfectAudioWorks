@@ -89,14 +89,20 @@ sudo dnf install cmake gcc-c++ make qt6-qtbase-devel \
 
 ### Windows
 Although windows release is out, it still less stable than linux release <br>
-install qt framework from [qt's official site](https://www.qt.io/download-dev) <br>
-install mingw compiler and then from mingw console install required components 
+install !(mysys2)[https://www.msys2.org/] and then from ucrt64 console install required components 
 ```
-pacman -S mingw-w64-x86_64-gcc \
-           mingw-w64-x86_64-cmake \
-           mingw-w64-x86_64-portaudio \
-           mingw-w64-x86_64-libsndfile \
-           mingw-w64-x86_64-mpg123
+pacman -S mingw-w64-ucrt-x86_64-toolchain \
+                   mingw-w64-ucrt-x86_64-cmake \
+                   mingw-w64-ucrt-x86_64-ninja \
+                   mingw-w64-ucrt-x86_64-pkgconf \
+                   mingw-w64-ucrt-x86_64-qt6-base \
+                   mingw-w64-ucrt-x86_64-qt6-tools \
+                   mingw-w64-ucrt-x86_64-portaudio \
+                   mingw-w64-ucrt-x86_64-libsndfile \
+                   mingw-w64-ucrt-x86_64-mpg123 \
+                   mingw-w64-ucrt-x86_64-taglib \
+                   mingw-w64-ucrt-x86_64-python \
+                   mingw-w64-ucrt-x86_64-nsis
 ```
 
 ### Build Instructions
