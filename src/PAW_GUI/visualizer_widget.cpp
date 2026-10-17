@@ -88,7 +88,7 @@ void VisualizerWidget::paintGL()
     if (m_magnitudes.empty()) return;
 
     int numBars = m_magnitudes.size();
-    int barsToDraw = std::min(numBars, 32); 
+    int barsToDraw = std::min(numBars, 64); 
     
     float barWidth = static_cast<float>(width()) / barsToDraw;
     float maxHeight = height();

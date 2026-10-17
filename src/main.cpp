@@ -131,6 +131,8 @@ int main(int argc, char* argv[]) {
 
     py::gil_scoped_release release;
 
+// todo: make media control keys to work in linux
+
 /*
 #ifdef Q_OS_LINUX
     LinuxKeys* keys = new LinuxKeys(&w);
