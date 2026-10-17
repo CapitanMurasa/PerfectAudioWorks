@@ -26,6 +26,8 @@ extern "C" {
         int samplerate;
         long totalFrames;
         long currentFrame;
+        float* visualizerBuffer;
+        volatile size_t visualizerSize;
         float gain;
         float lastGain;
         int paused;

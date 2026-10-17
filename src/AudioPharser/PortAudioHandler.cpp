@@ -107,7 +107,7 @@ void PortaudioThread::run() {
         if (m_player.stream) {
             if (Pa_IsStreamActive(m_player.stream) <= 0 && !m_isPaused) {
                 pa_mutex_unlock(&m_player.lock);
-                break; // Exit loop
+                break; 
             }
 
             if (!m_isPaused && m_player.codec) {
@@ -170,7 +170,22 @@ void PortaudioThread::SetFrameFromTimeline(float percent) {
 }
 
 void PortaudioThread::emitProgress() {
-    emit playbackProgress((int)m_player.currentFrame, (int)m_player.totalFrames, m_player.samplerate);
+    if (!m_player.visualizerBuffer || m_player.visualizerSize == 0) {
+        return; 
+    }
+
+    size_t currentSize = m_player.visualizerSize; 
+    std::vector<float> bufferChunk(
+        m_player.visualizerBuffer, 
+        m_player.visualizerBuffer + currentSize
+    );
+
+    emit playbackProgress(
+        static_cast<int>(m_player.currentFrame), 
+        static_cast<int>(m_player.totalFrames), 
+        m_player.samplerate, 
+        bufferChunk
+    );
 }
 
 QList<QPair<QString, int>> PortaudioThread::GetAllAvailableOutputDevices() {

@@ -31,7 +31,7 @@ public:
 
 signals:
     void errorOccurred(const QString&);
-    void playbackProgress(int current, int total, int samplerate);
+    void playbackProgress(int current, int total, int samplerate, std::vector<float> bufferChunk);
     void playbackFinished();
     void totalFileInfo(int totalFrames,int channels, int samplerate, const char* codecname);
 

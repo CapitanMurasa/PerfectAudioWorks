@@ -81,6 +81,14 @@ int audio_callback_c(const void* input, void* output, unsigned long frameCount,
     }
 
     size_t samplesRead = AudioRing_Read(&player->ringBuffer, out, samplesNeeded);
+    if (player->visualizerBuffer != NULL && out != NULL) {
+        size_t copySize = (samplesRead > 1024) ? 1024 : samplesRead;
+        if (copySize > 0) {
+            memcpy(player->visualizerBuffer, out, copySize * sizeof(float));
+            player->visualizerSize = copySize;
+        }
+    }
+
 
     float currentGain = player->lastGain;
     float gainStep = (player->gain - player->lastGain) / (float)frameCount;
@@ -92,6 +100,7 @@ int audio_callback_c(const void* input, void* output, unsigned long frameCount,
     player->lastGain = player->gain;
 
     player->currentFrame += (samplesRead / player->channels);
+
 
     if (samplesRead < samplesNeeded) {
         memset(out + samplesRead, 0, (samplesNeeded - samplesRead) * sizeof(float));
@@ -111,6 +120,9 @@ static int setup_stream_internal(AudioPlayer* player, int device) {
     if (device == -1) device = Pa_GetDefaultOutputDevice();
     const PaDeviceInfo* devInfo = Pa_GetDeviceInfo(device);
     if (!devInfo) return -1;
+
+    player->visualizerBuffer = (float*)malloc(1024 * sizeof(float));
+    player->visualizerSize = 0;
 
     PaStreamParameters output;
     memset(&output, 0, sizeof(PaStreamParameters));

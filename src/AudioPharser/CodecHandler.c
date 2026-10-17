@@ -70,15 +70,6 @@ CodecHandler* codec_open(const char* filename) {
     if (!ch) return NULL;
     memset(ch, 0, sizeof(CodecHandler));
 
-#ifdef ENABLE_SNDFILE
-    SndFileDecoder* sf = sndfile_open(filename);
-    if (sf) {
-        ch->type = CODEC_TYPE_SNDFILE;
-        ch->decoder = sf;
-        return ch;
-    }
-#endif
-
 #ifdef ENABLE_MPG123
     const char* ext = strrchr(filename, '.');
     if (ext && _stricmp(ext, ".mp3") == 0) {
@@ -88,6 +79,15 @@ CodecHandler* codec_open(const char* filename) {
             ch->decoder = mp3;
             return ch;
         }
+    }
+#endif
+
+#ifdef ENABLE_SNDFILE
+    SndFileDecoder* sf = sndfile_open(filename);
+    if (sf) {
+        ch->type = CODEC_TYPE_SNDFILE;
+        ch->decoder = sf;
+        return ch;
     }
 #endif
 

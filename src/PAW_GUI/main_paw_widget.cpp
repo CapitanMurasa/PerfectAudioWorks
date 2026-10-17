@@ -65,6 +65,8 @@ void Main_PAW_widget::SetupUIElements() {
     connect(m_audiothread, &PortaudioThread::totalFileInfo, this, &Main_PAW_widget::handleTotalFileInfo);
     connect(m_audiothread, &PortaudioThread::playbackFinished, this, &Main_PAW_widget::handlePlaybackFinished);
     connect(m_audiothread, &PortaudioThread::errorOccurred, this, &Main_PAW_widget::handleError);
+
+    
 }
 
 void Main_PAW_widget::SetupQtActions() {
@@ -106,22 +108,6 @@ Main_PAW_widget::Main_PAW_widget(QWidget* parent)
     if (saveplaylist) {
         addFilesToPlaylistfromDatabase(CurrentPlaylistId);
     }
-
-#ifdef _WIN32
-    GlobalKeys::instance().install();
-
-    GlobalKeys::instance().setCallback([this](int key) {
-        QMetaObject::invokeMethod(this, [this, key]() {
-            switch (key) {
-            case VK_MEDIA_PLAY_PAUSE: PlayPauseButton(); break;
-            case VK_MEDIA_NEXT_TRACK: PlayNextItem(); break;
-            case VK_MEDIA_PREV_TRACK: PlayPreviousItem(); break;
-            case VK_MEDIA_STOP:       StopPlayback(); break;
-            }
-            });
-        });
-#endif
-
     m_updateTimer = new QTimer(this);
 }
 
@@ -371,15 +357,18 @@ void Main_PAW_widget::resizeEvent(QResizeEvent* event)
     updateAlbumArt();
 }
 
-void Main_PAW_widget::handlePlaybackProgress(int currentFrame, int totalFrames, int sampleRate) {
+void Main_PAW_widget::handlePlaybackProgress(int currentFrame, int totalFrames, int sampleRate, std::vector<float> bufferChunk) {
     if (totalFrames > 0 && sampleRate > 0) {
         float framesInPercentage = (currentFrame * 1.0f) / totalFrames * 100.0f;
         currentDuration = (currentFrame * 1.0f) / sampleRate;
+
 
         bool oldBlockState = ui->TimelineSlider->blockSignals(true);
         ui->TimelineSlider->setValue(static_cast<float>(framesInPercentage));
         ui->TimelineSlider->blockSignals(oldBlockState);
         ui->CurrentFileDuration->setText(floatToMMSS(currentDuration));
+
+        ui->openGLWidget->updateAudioData(bufferChunk);
     }
 }
 
@@ -509,6 +498,7 @@ void Main_PAW_widget::ClearUi() {
     ui->Filename->setText("");
     ui->Artist->setText("");
     ui->AlbumArt->hide();
+    ui->openGLWidget->Clear();
 }
 
 void Main_PAW_widget::addFilesToPlaylist() {
@@ -804,8 +794,6 @@ void Main_PAW_widget::showAboutTrackinfo() {
 
 void Main_PAW_widget::handleError(const QString& errorMessage) {
     QMessageBox::critical(this, "Audio Playback Error", errorMessage);
-    m_audiothread->stopPlayback();
-    handlePlaybackFinished();
 }
 
 void Main_PAW_widget::SetVolumeFromSlider(int value) {

@@ -52,19 +52,22 @@ int main(int argc, char* argv[]) {
     }
 
 
-#if WIN32
+#if defined(_WIN32) || defined(WIN32)
     wchar_t buffer[MAX_PATH];
     GetModuleFileNameW(NULL, buffer, MAX_PATH);
     std::wstring full_path(buffer);
 
     size_t pos = full_path.find_last_of(L"\\/");
     std::wstring executable_dir = full_path.substr(0, pos);
-
     std::replace(executable_dir.begin(), executable_dir.end(), L'\\', L'/');
 
-    Py_SetPythonHome(executable_dir.c_str());
+    
+    std::wstring python_lib_check = executable_dir + L"/lib";
+    DWORD attribs = GetFileAttributesW(python_lib_check.c_str());
+    if (attribs != INVALID_FILE_ATTRIBUTES && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
+        Py_SetPythonHome(executable_dir.c_str());
+    }
 #endif
-
 
 
     py::scoped_interpreter guard{};
@@ -127,6 +130,8 @@ int main(int argc, char* argv[]) {
     w.show();
 
     py::gil_scoped_release release;
+
+// todo: make media control keys to work in linux
 
 /*
 #ifdef Q_OS_LINUX
